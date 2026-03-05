@@ -2,69 +2,50 @@ using UnityEngine;
 
 public class PlayerCombat : MonoBehaviour
 {
-    [Header("Ссылки")]
     public Animator animator;
-    public LayerMask enemyLayers;
-
-    [Header("Физическая атака (ЛКМ)")]
-    public float attackRange = 2f;
-    public float physDamage = 20f;
-    [Tooltip("Поворот при ударе мечом (попробуйте 90 или -90, если бьет боком)")]
-    public float physRotationOffset = 0f;
-
-    [Header("Магическая атака (ПКМ)")]
-    public GameObject magicPrefab;
     public Transform firePoint;
-    public float magDamage = 30f;
-    public float magicRotationOffset = 0f;
+    public GameObject magicPrefab;
+
+    [Header("РќР°СЃС‚СЂРѕР№РєРё СѓСЂРѕРЅР°")]
+    public float physDamage = 20f;
+    public float physRange = 2.5f; // РЈРІРµР»РёС‡РёР» СЂР°РґРёСѓСЃ, С‡С‚РѕР±С‹ С‚РѕС‡РЅРѕ РїРѕРїР°РґР°Р»Рѕ
+    public LayerMask enemyLayer;
+
+    private IInputService _input;
+
+    public void Construct(IInputService input) => _input = input;
 
     void Update()
     {
-        // ЛКМ - Ближний бой
-        if (Input.GetMouseButtonDown(0))
+        if (_input == null) return;
+
+        // Р›РљРњ - Р¤РёР·РёС‡РµСЃРєР°СЏ Р°С‚Р°РєР°
+        if (_input.AttackPhys)
         {
-            PhysicalAttack();
+            animator.SetTrigger("AttackPhys");
+            DealPhysDamage(); // Р’Р«Р—Р«Р’РђР•Рњ РЎР РђР—РЈ
         }
 
-        // ПКМ - Магия
-        if (Input.GetMouseButtonDown(1))
+        // РџРљРњ - РњР°РіРёСЏ
+        if (_input.AttackMag)
         {
-            MagicAttack();
+            animator.SetTrigger("AttackMag");
+            ShootMagic(); // Р’Р«Р—Р«Р’РђР•Рњ РЎР РђР—РЈ
         }
     }
 
-    void PhysicalAttack()
+    void DealPhysDamage()
     {
-        // 1. РАЗВОРОТ К КАМЕРЕ
-        RotateToCamera(physRotationOffset);
+        // РЎРѕР·РґР°РµРј Р·РѕРЅСѓ РїРѕСЂР°Р¶РµРЅРёСЏ РџР•Р Р•Р” РёРіСЂРѕРєРѕРј
+        Vector3 pos = transform.position + transform.forward * 1.5f + Vector3.up;
+        Collider[] enemies = Physics.OverlapSphere(pos, physRange, enemyLayer);
 
-        // 2. ЗАПУСК АНИМАЦИИ
-        animator.SetTrigger("AttackPhys");
-
-        // 3. УРОН (лучше вызывать через Animation Event, но можно и так)
-        ApplyPhysicalDamage();
-    }
-
-    void MagicAttack()
-    {
-        // 1. РАЗВОРОТ К КАМЕРЕ
-        RotateToCamera(magicRotationOffset);
-
-        // 2. ЗАПУСК АНИМАЦИИ
-        animator.SetTrigger("AttackMag");
-    }
-
-    // Общий метод для разворота персонажа к камере со смещением
-    void RotateToCamera(float offset)
-    {
-        Vector3 camForward = Camera.main.transform.forward;
-        camForward.y = 0; // Чтобы не наклонялся
-
-        if (camForward != Vector3.zero)
+        foreach (var enemy in enemies)
         {
-            Quaternion lookRotation = Quaternion.LookRotation(camForward);
-            lookRotation *= Quaternion.Euler(0, offset, 0);
-            transform.rotation = lookRotation;
+            if (enemy.TryGetComponent<IDamageable>(out var target))
+            {
+                target.TakeDamage(physDamage, 0);
+            }
         }
     }
 
@@ -72,24 +53,16 @@ public class PlayerCombat : MonoBehaviour
     {
         if (magicPrefab != null && firePoint != null)
         {
-            Instantiate(magicPrefab, firePoint.position, firePoint.rotation);
+            // Р§С‚РѕР±С‹ Р»РµС‚РµР»Рѕ СЂРѕРІРЅРѕ, Р±РµСЂРµРј РїРѕРІРѕСЂРѕС‚ РРіСЂРѕРєР° (transform.rotation)
+            Instantiate(magicPrefab, firePoint.position, transform.rotation);
         }
     }
 
-    void ApplyPhysicalDamage()
-    {
-        // Теперь transform.forward всегда смотрит туда, куда мы довернули персонажа
-        Collider[] hitEnemies = Physics.OverlapSphere(transform.position + transform.forward, attackRange, enemyLayers);
-        foreach (Collider enemy in hitEnemies)
-        {
-            Health h = enemy.GetComponent<Health>();
-            if (h != null) h.TakeDamage(physDamage, 0);
-        }
-    }
-
+    // Р­С‚Рѕ РїСЂРѕСЃС‚Рѕ СЂРёСЃСѓРµС‚ РєСЂР°СЃРЅС‹Р№ С€Р°СЂ РІ СЂРµРґР°РєС‚РѕСЂРµ, С‡С‚РѕР±С‹ С‚С‹ РІРёРґРµР»Р° Р·РѕРЅСѓ СѓРґР°СЂР°
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position + transform.forward, attackRange);
+        Vector3 pos = transform.position + transform.forward * 1.5f + Vector3.up;
+        Gizmos.DrawWireSphere(pos, physRange);
     }
 }

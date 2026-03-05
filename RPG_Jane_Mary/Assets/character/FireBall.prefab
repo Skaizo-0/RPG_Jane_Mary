@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5427133864055781080}
   - component: {fileID: 609611687099679382}
   - component: {fileID: 4609727262911644884}
-  - component: {fileID: 4387157885569685003}
+  - component: {fileID: -5833453787466177998}
   m_Layer: 0
   m_Name: FireBall
   m_TagString: Untagged
@@ -137,7 +137,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &4387157885569685003
+--- !u!114 &-5833453787466177998
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -150,5 +150,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 15
-  damage: 30
+  damage: 20
   lifetime: 3

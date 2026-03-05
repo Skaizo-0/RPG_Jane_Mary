@@ -4,73 +4,51 @@ public class PlayerMovement : MonoBehaviour
 {
     public CharacterController controller;
     public Animator animator;
-
     public float walkSpeed = 3f;
     public float runSpeed = 6f;
-    public float gravity = -9.81f;
-    public float turnSpeed = 10f;
 
-    private Vector3 velocity;
-    private Transform cam; // Ссылка на основную камеру
+    private IInputService _input;
+    private Transform _cam;
+    private float _gravityVelocity;
 
-    void Start()
+    public void Construct(IInputService input)
     {
-        // Находим главную камеру в начале игры
-        cam = Camera.main.transform;
+        _input = input;
+        _cam = Camera.main.transform; // РЎСЃС‹Р»РєР° РЅР° РєР°РјРµСЂСѓ РґР»СЏ РїСЂР°РІРёР»СЊРЅРѕРіРѕ РґРІРёР¶РµРЅРёСЏ
     }
 
     void Update()
     {
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
-        Vector3 inputDirection = new Vector3(horizontal, 0f, vertical).normalized;
+        if (_input == null) return;
 
-        if (inputDirection.magnitude >= 0.1f)
+        Vector3 inputDir = _input.MoveAxis;
+
+        if (inputDir.magnitude > 0.1f)
         {
-            // 1. ПОЛУЧАЕМ НАПРАВЛЕНИЕ КАМЕРЫ
-            Vector3 camForward = cam.forward;
-            Vector3 camRight = cam.right;
+            // РЎС‡РёС‚Р°РµРј РЅР°РїСЂР°РІР»РµРЅРёРµ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ РїРѕРІРѕСЂРѕС‚Р° РєР°РјРµСЂС‹
+            Vector3 camForward = _cam.forward;
+            Vector3 camRight = _cam.right;
+            camForward.y = 0; camRight.y = 0;
 
-            // 2. ОБНУЛЯЕМ Y (чтобы персонаж не пытался взлететь, если камера смотрит вверх)
-            camForward.y = 0;
-            camRight.y = 0;
-            camForward.Normalize();
-            camRight.Normalize();
+            Vector3 moveDir = (camForward.normalized * inputDir.z + camRight.normalized * inputDir.x).normalized;
 
-            // 3. СЧИТАЕМ НАПРАВЛЕНИЕ ОТНОСИТЕЛЬНО КАМЕРЫ
-            // Это магия: складываем "вперед камеры" * нажатие W и "право камеры" * нажатие D
-            Vector3 moveDirection = (camForward * vertical + camRight * horizontal).normalized;
+            float currentSpeed = _input.IsRunning ? runSpeed : walkSpeed;
+            controller.Move(moveDir * currentSpeed * Time.deltaTime);
 
-            // Определяем скорость
-            bool isRunning = Input.GetKey(KeyCode.LeftShift);
-            float targetSpeed = isRunning ? runSpeed : walkSpeed;
+            // РџР»Р°РІРЅС‹Р№ РїРѕРІРѕСЂРѕС‚ РІ СЃС‚РѕСЂРѕРЅСѓ РґРІРёР¶РµРЅРёСЏ
+            transform.forward = Vector3.Slerp(transform.forward, moveDir, 10f * Time.deltaTime);
 
-            // Поворачиваем персонажа лицом туда, куда он идет
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
-
-            // Двигаем персонажа
-            controller.Move(moveDirection * targetSpeed * Time.deltaTime);
-
-            // Анимация
-            float animSpeed = isRunning ? 1f : 0.5f;
-            animator.SetFloat("Speed", animSpeed, 0.1f, Time.deltaTime);
+            animator.SetFloat("Speed", _input.IsRunning ? 1f : 0.5f, 0.1f, Time.deltaTime);
         }
         else
         {
             animator.SetFloat("Speed", 0f, 0.1f, Time.deltaTime);
         }
 
-        // Гравитация
-        if (controller.isGrounded && velocity.y < 0) velocity.y = -2f;
-        velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
-    }
+        // РџСЂРёРјРёС‚РёРІРЅР°СЏ РіСЂР°РІРёС‚Р°С†РёСЏ (РўР— С‚СЂРµР±СѓРµС‚ 3D RPG)
+        if (controller.isGrounded) _gravityVelocity = -2f;
+        else _gravityVelocity += -9.81f * Time.deltaTime;
 
-    // Тот самый метод для остановки при получении урона
-    public void StopMoving()
-    {
-        velocity = Vector3.zero;
-        if (animator != null) animator.SetFloat("Speed", 0);
+        controller.Move(new Vector3(0, _gravityVelocity, 0) * Time.deltaTime);
     }
 }

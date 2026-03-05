@@ -1,105 +1,92 @@
 using UnityEngine;
-public enum EnemyType { Melee, Ranged }
+
 public class EnemyAI : MonoBehaviour
 {
-    public EnemyType type;
+    public enum Type { Melee, Ranged }
+    public Type enemyType;
     public Transform player;
     public Animator animator;
-    public float speed = 3f;
-    public float chaseDistance = 10f;
 
-    [Header("Настройки атаки")]
-    public float attackDistance = 2.2f;
-    public float attackCooldown = 2.5f;
-    private float nextAttackTime;
-    private bool isAttacking = false; // Блокировщик движения
+    public float chaseDistance = 15f; // Р Р°РґРёСѓСЃ Р°РіСЂРµСЃСЃРёРё
+    public float attackDist = 2.5f;   // Р”РёСЃС‚Р°РЅС†РёСЏ РґР»СЏ Р°С‚Р°РєРё
+    public float speed = 2f;
 
-    [Header("Для Мага")]
+    [Header("Р”Р»СЏ РњР°РіР°")]
     public GameObject magicPrefab;
     public Transform firePoint;
 
+    private Health _health;
+    private float _attackCooldown = 2f;
+    private float _lastAttackTime;
+
+    void Start()
+    {
+        _health = GetComponent<Health>();
+        _health.OnDeath += () => {
+            this.enabled = false;
+            if (GetComponent<CharacterController>()) GetComponent<CharacterController>().enabled = false;
+        };
+
+        // Р•СЃР»Рё СЌС‚Рѕ РјР°Рі, РѕРЅ РґРѕР»Р¶РµРЅ Р±РёС‚СЊ РёР·РґР°Р»РµРєР°
+        if (enemyType == Type.Ranged) attackDist = 8f;
+    }
+
     void Update()
     {
-        if (player == null || isAttacking) return; // Если атакуем — ничего не делаем в Update
+        if (player == null || _health.currentHp <= 0) return;
 
-        float distance = Vector3.Distance(transform.position, player.position);
+        float dist = Vector3.Distance(transform.position, player.position);
 
-        if (distance < chaseDistance)
+        // Р•СЃР»Рё РёРіСЂРѕРє РІ СЂР°РґРёСѓСЃРµ РІРёРґРёРјРѕСЃС‚Рё
+        if (dist < chaseDistance)
         {
-            SmoothRotateToPlayer();
+            // Р’СЃРµРіРґР° СЃРјРѕС‚СЂРёРј РЅР° РёРіСЂРѕРєР°
+            Vector3 lookDir = player.position - transform.position;
+            lookDir.y = 0;
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookDir), 5f * Time.deltaTime);
 
-            if (distance > attackDistance)
+            if (dist > attackDist)
             {
-                MoveToPlayer();
+                // РРґРµРј Рє РёРіСЂРѕРєСѓ
+                transform.position = Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
+                animator.SetFloat("Speed", 0.5f);
             }
             else
             {
-                StopMoving();
-                if (Time.time >= nextAttackTime)
+                // РћСЃС‚Р°РЅРѕРІРёР»РёСЃСЊ Рё Р°С‚Р°РєСѓРµРј
+                animator.SetFloat("Speed", 0);
+                if (Time.time > _lastAttackTime + _attackCooldown)
                 {
-                    StartAttack();
+                    Attack();
                 }
             }
         }
         else
         {
-            StopMoving();
+            animator.SetFloat("Speed", 0);
         }
     }
 
-    void StartAttack()
+    void Attack()
     {
-        isAttacking = true; // Запрещаем двигаться
-        string trigger = (type == EnemyType.Melee) ? "AttackPh" : "AttackMa";
+        _lastAttackTime = Time.time;
+        string trigger = (enemyType == Type.Melee) ? "AttackPh" : "AttackMa";
         animator.SetTrigger(trigger);
 
-        nextAttackTime = Time.time + attackCooldown;
-
-        // Ждем завершения анимации (например, 1.5 секунды), прежде чем снова разрешить ходить
-        Invoke("EndAttack", 1.5f);
-
-        // Нанесение урона
-        if (type == EnemyType.Melee) Invoke("DealMeleeDamage", 0.6f);
-        else Invoke("SpawnMagic", 0.6f);
+        // РЈСЂРѕРЅ РЅР°РЅРѕСЃРёРј СЃ Р·Р°РґРµСЂР¶РєРѕР№ (РїРѕРґ Р°РЅРёРјР°С†РёСЋ)
+        if (enemyType == Type.Melee) Invoke("ApplyMeleeDamage", 0.6f);
+        else Invoke("LaunchMagic", 0.6f);
     }
 
-    void EndAttack()
+    void ApplyMeleeDamage()
     {
-        isAttacking = false; // Снова можно ходить
+        if (player != null && Vector3.Distance(transform.position, player.position) <= attackDist + 1f)
+            player.GetComponent<IDamageable>()?.TakeDamage(10, 0);
     }
 
-    void MoveToPlayer()
+    void LaunchMagic()
     {
-        transform.position = Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
-        animator.SetFloat("Speed", 0.5f);
-    }
-
-    void StopMoving()
-    {
-        animator.SetFloat("Speed", 0);
-    }
-
-    void SmoothRotateToPlayer()
-    {
-        Vector3 direction = (player.position - transform.position).normalized;
-        direction.y = 0;
-        if (direction != Vector3.zero)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 5f * Time.deltaTime);
-        }
-    }
-
-    void DealMeleeDamage()
-    {
-        if (player != null && Vector3.Distance(transform.position, player.position) <= attackDistance + 0.5f)
-        {
-            player.GetComponent<Health>().TakeDamage(10, 0);
-        }
-    }
-
-    void SpawnMagic()
-    {
-        if (firePoint != null) Instantiate(magicPrefab, firePoint.position, transform.rotation);
+        if (firePoint && magicPrefab)
+            Instantiate(magicPrefab, firePoint.position, transform.rotation);
     }
 }

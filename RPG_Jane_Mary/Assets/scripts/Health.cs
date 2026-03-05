@@ -1,124 +1,58 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 using System.Collections;
 
-public class Health : MonoBehaviour
+public class Health : MonoBehaviour, IDamageable
 {
-    [Header("Параметры HP")]
-    public float maxHealth = 100f;
-    public float currentHealth;
-
-    [Header("Интерфейс и Визуал")]
-    public Slider hpSlider; // Слайдер над головой
+    public float maxHp = 100f;
+    public float currentHp;
+    public Slider hpSlider;
     public Animator animator;
 
-    [Header("Настройки состояния")]
-    private bool isDead = false;
-    private bool isStunned = false; // Флаг оглушения
+    public event Action OnDeath;
 
-    void Start()
+    private void Start()
     {
-        currentHealth = maxHealth;
-
-        // Настройка слайдера (значения от 0 до 1)
-        if (hpSlider != null)
-        {
-            hpSlider.maxValue = 1;
-            hpSlider.value = 1;
-        }
+        currentHp = maxHp;
+        if (hpSlider != null) hpSlider.value = 1f;
     }
 
-    // Главный метод получения урона
-    public void TakeDamage(float physicalDamage, float magicDamage)
+    public void TakeDamage(float phys, float mag)
     {
-        if (isDead) return;
+        if (currentHp <= 0) return;
 
-        float totalDamage = physicalDamage + magicDamage;
-        currentHealth -= totalDamage;
-        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+        currentHp = Mathf.Clamp(currentHp - (phys + mag), 0, maxHp);
+        if (hpSlider != null) hpSlider.value = currentHp / maxHp;
 
-        // Обновляем полоску HP
-        if (hpSlider != null)
+        if (currentHp > 0)
         {
-            hpSlider.value = currentHealth / maxHealth;
+            if (animator) animator.SetTrigger("GetHit");
+            StartCoroutine(StunRoutine());
         }
-
-        Debug.Log(gameObject.name + " получил урон: " + totalDamage + ". Осталось HP: " + currentHealth);
-
-        if (currentHealth <= 0)
+        else
         {
             Die();
         }
-        else
-        {
-            // Анимация получения урона
-            if (animator != null) animator.SetTrigger("GetHit");
-
-            // Если это Игрок, включаем "Стан", чтобы убрать плавание
-            if (gameObject.CompareTag("Player") && !isStunned)
-            {
-                StartCoroutine(StunRoutine(0.1f)); // 0.5 сек нельзя ходить
-            }
-        }
     }
 
-    // Корутина для временного отключения управления
-    private IEnumerator StunRoutine(float duration)
+    private void Die()
     {
-        isStunned = true;
+        if (animator) animator.SetTrigger("Die");
+        OnDeath?.Invoke();
 
-        // Находим скрипты управления
-        var movement = GetComponent<PlayerMovement>();
-        var combat = GetComponent<PlayerCombat>();
-
-        // Выключаем их
-        if (movement != null) movement.enabled = false;
-        if (combat != null) combat.enabled = false;
-
-        // Ждем время проигрывания анимации боли
-        yield return new WaitForSeconds(duration);
-
-        // Включаем обратно, если еще живы
-        if (!isDead)
+        // Р•СЃР»Рё СЌС‚Рѕ РЅРµ РёРіСЂРѕРє, СѓРґР°Р»СЏРµРј РѕР±СЉРµРєС‚ С‡РµСЂРµР· 3 СЃРµРєСѓРЅРґС‹
+        if (!gameObject.CompareTag("Player"))
         {
-            if (movement != null) movement.enabled = true;
-            if (combat != null) combat.enabled = true;
-            isStunned = false;
-        }
-    }
-
-    void Die()
-    {
-        if (isDead) return;
-        isDead = true;
-
-        if (animator != null) animator.SetTrigger("Die");
-
-        // Логика смерти ГЕРОЯ
-        if (gameObject.CompareTag("Player"))
-        {
-            Debug.Log("ГЕРОЙ ПОГИБ - КОНЕЦ ИГРЫ");
-
-            // Навсегда выключаем управление
-            var movement = GetComponent<PlayerMovement>();
-            if (movement != null) movement.enabled = false;
-
-            var controller = GetComponent<CharacterController>();
-            if (controller != null) controller.enabled = false;
-
-            // Здесь в будущем можно добавить: gameOverPanel.SetActive(true);
-        }
-        // Логика смерти МОБА
-        else
-        {
-            Debug.Log("МОБ УНИЧТОЖЕН");
-
-            // Отключаем ИИ, чтобы он не пытался ходить мертвым
-            var ai = GetComponent<EnemyAI>();
-            if (ai != null) ai.enabled = false;
-
-            // Моб исчезает через 3 секунды
             Destroy(gameObject, 3f);
         }
+    }
+
+    private IEnumerator StunRoutine()
+    {
+        var move = GetComponent<PlayerMovement>();
+        if (move != null) move.enabled = false;
+        yield return new WaitForSeconds(0.2f);
+        if (currentHp > 0 && move != null) move.enabled = true;
     }
 }
