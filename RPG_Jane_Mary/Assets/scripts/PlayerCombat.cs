@@ -4,26 +4,29 @@ public class PlayerCombat : MonoBehaviour
 {
     [Header("Ссылки")]
     public Animator animator;
-    public LayerMask enemyLayers; // Слой Enemy
+    public LayerMask enemyLayers;
 
     [Header("Физическая атака (ЛКМ)")]
     public float attackRange = 2f;
     public float physDamage = 20f;
+    [Tooltip("Поворот при ударе мечом (попробуйте 90 или -90, если бьет боком)")]
+    public float physRotationOffset = 0f;
 
     [Header("Магическая атака (ПКМ)")]
-    public GameObject magicPrefab; // Сюда тянем префаб FireBall
-    public Transform firePoint;   // Сюда тянем объект FirePoint из иерархии
-    public float magDamage = 30f;  // Урон магией (передается снаряду или сразу)
+    public GameObject magicPrefab;
+    public Transform firePoint;
+    public float magDamage = 30f;
+    public float magicRotationOffset = 0f;
 
     void Update()
     {
-        // ЛКМ - Физическая атака
+        // ЛКМ - Ближний бой
         if (Input.GetMouseButtonDown(0))
         {
             PhysicalAttack();
         }
 
-        // ПКМ - Магическая атака
+        // ПКМ - Магия
         if (Input.GetMouseButtonDown(1))
         {
             MagicAttack();
@@ -32,30 +35,39 @@ public class PlayerCombat : MonoBehaviour
 
     void PhysicalAttack()
     {
-        // Запускаем триггер в аниматоре
+        // 1. РАЗВОРОТ К КАМЕРЕ
+        RotateToCamera(physRotationOffset);
+
+        // 2. ЗАПУСК АНИМАЦИИ
         animator.SetTrigger("AttackPhys");
 
-        // Поиск врагов в радиусе (создаем невидимую сферу перед игроком)
-        Collider[] hitEnemies = Physics.OverlapSphere(transform.position + transform.forward, attackRange, enemyLayers);
-
-        foreach (Collider enemy in hitEnemies)
-        {
-            Health enemyHealth = enemy.GetComponent<Health>();
-            if (enemyHealth != null)
-            {
-                // Наносим только физический урон
-                enemyHealth.TakeDamage(physDamage, 0);
-            }
-        }
+        // 3. УРОН (лучше вызывать через Animation Event, но можно и так)
+        ApplyPhysicalDamage();
     }
 
     void MagicAttack()
     {
-        // ТЕПЕРЬ ТУТ ТОЛЬКО АНИМАЦИЯ
+        // 1. РАЗВОРОТ К КАМЕРЕ
+        RotateToCamera(magicRotationOffset);
+
+        // 2. ЗАПУСК АНИМАЦИИ
         animator.SetTrigger("AttackMag");
     }
 
-    // А ЭТОТ МЕТОД ВЫЗОВЕТ САМА АНИМАЦИЯ В НУЖНЫЙ МОМЕНТ
+    // Общий метод для разворота персонажа к камере со смещением
+    void RotateToCamera(float offset)
+    {
+        Vector3 camForward = Camera.main.transform.forward;
+        camForward.y = 0; // Чтобы не наклонялся
+
+        if (camForward != Vector3.zero)
+        {
+            Quaternion lookRotation = Quaternion.LookRotation(camForward);
+            lookRotation *= Quaternion.Euler(0, offset, 0);
+            transform.rotation = lookRotation;
+        }
+    }
+
     public void ShootMagic()
     {
         if (magicPrefab != null && firePoint != null)
@@ -64,7 +76,17 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    // Визуализация радиуса атаки в окне Scene
+    void ApplyPhysicalDamage()
+    {
+        // Теперь transform.forward всегда смотрит туда, куда мы довернули персонажа
+        Collider[] hitEnemies = Physics.OverlapSphere(transform.position + transform.forward, attackRange, enemyLayers);
+        foreach (Collider enemy in hitEnemies)
+        {
+            Health h = enemy.GetComponent<Health>();
+            if (h != null) h.TakeDamage(physDamage, 0);
+        }
+    }
+
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
