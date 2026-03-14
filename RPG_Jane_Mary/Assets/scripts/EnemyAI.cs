@@ -1,14 +1,16 @@
 using UnityEngine;
 
+// Перечисление типов вынесено наружу, чтобы его видели другие скрипты
+public enum EnemyType { Melee, Ranged }
+
 public class EnemyAI : MonoBehaviour
 {
-    public enum Type { Melee, Ranged }
-    public Type enemyType;
+    public EnemyType enemyType; // Используем общий тип
     public Transform player;
     public Animator animator;
 
-    public float chaseDistance = 15f; // Радиус агрессии
-    public float attackDist = 2.5f;   // Дистанция для атаки
+    public float chaseDistance = 15f;
+    public float attackDist = 2.5f;
     public float speed = 2f;
 
     [Header("Для Мага")]
@@ -22,39 +24,40 @@ public class EnemyAI : MonoBehaviour
     void Start()
     {
         _health = GetComponent<Health>();
-        _health.OnDeath += () => {
-            this.enabled = false;
-            if (GetComponent<CharacterController>()) GetComponent<CharacterController>().enabled = false;
-        };
 
         // Если это маг, он должен бить издалека
-        if (enemyType == Type.Ranged) attackDist = 8f;
+        if (enemyType == EnemyType.Ranged) attackDist = 8f;
+
+        // Автоматически находим игрока по тегу, если забыли перетащить в инспекторе
+        if (player == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) player = p.transform;
+        }
     }
 
     void Update()
     {
-        if (player == null || _health.currentHp <= 0) return;
+        // ИСПРАВЛЕНО: Обращаемся к CurrentHealth (с большой буквы)
+        if (player == null || _health.CurrentHealth <= 0)
+        {
+            StopMoving();
+            return;
+        }
 
         float dist = Vector3.Distance(transform.position, player.position);
 
-        // Если игрок в радиусе видимости
         if (dist < chaseDistance)
         {
-            // Всегда смотрим на игрока
-            Vector3 lookDir = player.position - transform.position;
-            lookDir.y = 0;
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookDir), 5f * Time.deltaTime);
+            SmoothRotateToPlayer();
 
             if (dist > attackDist)
             {
-                // Идем к игроку
-                transform.position = Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
-                animator.SetFloat("Speed", 0.5f);
+                MoveToPlayer();
             }
             else
             {
-                // Остановились и атакуем
-                animator.SetFloat("Speed", 0);
+                StopMoving();
                 if (Time.time > _lastAttackTime + _attackCooldown)
                 {
                     Attack();
@@ -63,30 +66,60 @@ public class EnemyAI : MonoBehaviour
         }
         else
         {
-            animator.SetFloat("Speed", 0);
+            StopMoving();
+        }
+    }
+
+    void MoveToPlayer()
+    {
+        transform.position = Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
+        animator.SetFloat("Speed", 0.5f);
+    }
+
+    void StopMoving()
+    {
+        animator.SetFloat("Speed", 0);
+    }
+
+    void SmoothRotateToPlayer()
+    {
+        Vector3 lookDir = player.position - transform.position;
+        lookDir.y = 0;
+        if (lookDir != Vector3.zero)
+        {
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookDir), 5f * Time.deltaTime);
         }
     }
 
     void Attack()
     {
         _lastAttackTime = Time.time;
-        string trigger = (enemyType == Type.Melee) ? "AttackPh" : "AttackMa";
+        // Триггеры должны совпадать с именами в Аниматоре моба
+        string trigger = (enemyType == EnemyType.Melee) ? "AttackPh" : "AttackMa";
         animator.SetTrigger(trigger);
 
-        // Урон наносим с задержкой (под анимацию)
-        if (enemyType == Type.Melee) Invoke("ApplyMeleeDamage", 0.6f);
+        if (enemyType == EnemyType.Melee) Invoke("ApplyMeleeDamage", 0.6f);
         else Invoke("LaunchMagic", 0.6f);
     }
 
     void ApplyMeleeDamage()
     {
+        // Проверяем дистанцию в момент удара
         if (player != null && Vector3.Distance(transform.position, player.position) <= attackDist + 1f)
-            player.GetComponent<IDamageable>()?.TakeDamage(10, 0);
+        {
+            // Используем интерфейс IDamageable (Инверсия зависимости из лекции)
+            if (player.TryGetComponent<IDamageable>(out var target))
+            {
+                target.TakeDamage(10, 0);
+            }
+        }
     }
 
     void LaunchMagic()
     {
         if (firePoint && magicPrefab)
+        {
             Instantiate(magicPrefab, firePoint.position, transform.rotation);
+        }
     }
 }

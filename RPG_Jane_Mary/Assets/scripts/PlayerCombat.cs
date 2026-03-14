@@ -12,15 +12,21 @@ public class PlayerCombat : MonoBehaviour
     public LayerMask enemyLayer;
 
     [Header("Исправление поворота Mixamo")]
-    [Tooltip("Если при ударе мечом он бьет левее/правее - подправь это число (90 или -90)")]
     public float physRotationOffset = 0f;
-    [Tooltip("Если при магии рука уходит вбок - подправь это число")]
     public float magicRotationOffset = 0f;
+
+    [Header("Кулдаун магии (ТЗ)")]
+    public float magicCooldown = 3f; // Время перезарядки в секундах
+    private float _lastMagicTime = -10f; // Время последнего выстрела
 
     private IInputService _input;
     private Transform _cam;
 
-    // Метод из лекции для внедрения зависимостей
+    // Свойство для UI: возвращает значение от 0 до 1 (насколько готова магия)
+    // 0 - только что выстрелили (иконка темная), 1 - готова (иконка светлая)
+    public float MagicReadyProgress => Mathf.Clamp01((Time.time - _lastMagicTime) / magicCooldown);
+
+    // Метод из лекции (раздел 3.1.3) для внедрения зависимостей
     public void Construct(IInputService input)
     {
         _input = input;
@@ -34,24 +40,21 @@ public class PlayerCombat : MonoBehaviour
         // ЛКМ - Физическая атака
         if (_input.AttackPhys)
         {
-            RotateToCamera(physRotationOffset); // Разворачиваем игрока
+            RotateToCamera(physRotationOffset);
             animator.SetTrigger("AttackPhys");
-
-            // ВНИМАНИЕ: DealPhysDamage() отсюда УДАЛЕН. 
-            // Теперь его вызовет Animation Event в момент взмаха!
+            // Урон наносится через Animation Event (DealPhysDamage)
         }
 
-        // ПКМ - Магия
-        if (_input.AttackMag)
+        // ПКМ - Магическая атака (с проверкой кулдауна по ТЗ)
+        if (_input.AttackMag && Time.time >= _lastMagicTime + magicCooldown)
         {
-            RotateToCamera(magicRotationOffset); // Разворачиваем игрока
+            _lastMagicTime = Time.time; // Запоминаем время атаки
+            RotateToCamera(magicRotationOffset);
             animator.SetTrigger("AttackMag");
-
-            // ShootMagic() вызывается через Animation Event
+            // Выстрел происходит через Animation Event (ShootMagic)
         }
     }
 
-    // Метод для выравнивания персонажа по камере (чтобы не бил в бок)
     private void RotateToCamera(float offset)
     {
         if (_cam == null) _cam = Camera.main.transform;
@@ -66,7 +69,7 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    // ВЫЗЫВАЕТСЯ ЧЕРЕЗ ANIMATION EVENT (на кадре броска)
+    // ВЫЗЫВАЕТСЯ ЧЕРЕЗ ANIMATION EVENT
     public void ShootMagic()
     {
         if (magicPrefab != null && firePoint != null)
@@ -75,17 +78,17 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    // ВЫЗЫВАЕТСЯ ЧЕРЕЗ ANIMATION EVENT (на кадре удара мечом)
+    // ВЫЗЫВАЕТСЯ ЧЕРЕЗ ANIMATION EVENT
     public void DealPhysDamage()
     {
-        // Создаем зону поражения ПЕРЕД игроком
-        // 1.5f - это смещение центра сферы вперед, чтобы бить перед собой
+        // Смещение сферы урона на 1.5 метра вперед
         Vector3 pos = transform.position + transform.forward * 1.5f + Vector3.up;
         Collider[] enemies = Physics.OverlapSphere(pos, physRange, enemyLayer);
 
         foreach (var enemy in enemies)
         {
-            // Используем интерфейс IDamageable из лекций
+            // Инверсия зависимости (раздел 3.1.3 лекции): 
+            // зависим от интерфейса IDamageable, а не от конкретных классов врагов.
             if (enemy.TryGetComponent<IDamageable>(out var target))
             {
                 target.TakeDamage(physDamage, 0);
@@ -93,7 +96,6 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    // Рисует красную сферу в редакторе (только когда игрок выбран)
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
