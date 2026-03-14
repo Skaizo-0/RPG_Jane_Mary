@@ -289,11 +289,6 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
---- !u!4 &364316128 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4825661686246901170, guid: 5eadd3b1afd597446a5e518056d8b290, type: 3}
-  m_PrefabInstance: {fileID: 3664166633049331934}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -553,13 +548,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 650618965}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.606, y: 0.896, z: 0}
+  m_LocalRotation: {x: 0.500002, y: -0.41507617, z: 0.56708753, w: -0.5060845}
+  m_LocalPosition: {x: 0.677, y: 0.087, z: 0.072}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 364316128}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Father: {fileID: 1823133655}
+  m_LocalEulerAnglesHint: {x: -177.976, y: -98.94699, z: -278.237}
 --- !u!1 &800091364
 GameObject:
   m_ObjectHideFlags: 0
@@ -945,6 +940,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &1359987528 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2818768658344196368, guid: 5eadd3b1afd597446a5e518056d8b290, type: 3}
+  m_PrefabInstance: {fileID: 3664166633049331934}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1383657643
 GameObject:
   m_ObjectHideFlags: 0
@@ -1099,7 +1099,12 @@ CharacterController:
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0.91, z: 0}
+  m_Center: {x: 0, y: 1.11, z: 0}
+--- !u!4 &1823133655 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3214573479593187204, guid: 5eadd3b1afd597446a5e518056d8b290, type: 3}
+  m_PrefabInstance: {fileID: 3664166633049331934}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1903363888
 GameObject:
   m_ObjectHideFlags: 0
@@ -1174,13 +1179,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 543450652149453031}
-  firePoint: {fileID: 650618966}
+  firePoint: {fileID: 1359987528}
   magicPrefab: {fileID: 1923774466051800111, guid: 558aa8c7e9daf9144bc897cee71babd6, type: 3}
   physDamage: 20
   physRange: 2
   enemyLayer:
     serializedVersion: 2
     m_Bits: 8
+  physRotationOffset: 90
+  magicRotationOffset: 90
 --- !u!114 &543450652149453033
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1663,7 +1670,7 @@ PrefabInstance:
     - {fileID: 5663261789793919269, guid: 5eadd3b1afd597446a5e518056d8b290, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 4825661686246901170, guid: 5eadd3b1afd597446a5e518056d8b290, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 3214573479593187204, guid: 5eadd3b1afd597446a5e518056d8b290, type: 3}
       insertIndex: -1
       addedObject: {fileID: 650618966}
     m_AddedComponents:
