@@ -51,4 +51,12 @@ public class PlayerMovement : MonoBehaviour
 
         controller.Move(new Vector3(0, _gravityVelocity, 0) * Time.deltaTime);
     }
+
+    public void Teleport(Vector3 pos)
+    {
+        controller.enabled = false; // Отключаем, чтобы не мешал телепорту
+        transform.position = pos;
+        controller.enabled = true;
+    }
+
 }

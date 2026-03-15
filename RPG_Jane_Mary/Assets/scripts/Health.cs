@@ -43,6 +43,12 @@ public class Health : MonoBehaviour, IDamageable
         }
     }
 
+    public void SetHealth(float amount)
+    {
+        _currentHp = amount;
+        UpdateUI();
+    }
+
     private void UpdateUI()
     {
         if (worldHpSlider != null) worldHpSlider.value = _currentHp / maxHp;
