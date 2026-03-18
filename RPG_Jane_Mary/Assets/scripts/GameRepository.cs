@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GameRepository
+public class GameRepository : ISaveService
 {
     private const string SaveKey = "PlayerSave";
 

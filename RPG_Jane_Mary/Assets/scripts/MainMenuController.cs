@@ -1,26 +1,39 @@
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class MainMenuController : MonoBehaviour
+public class MainMenuController
 {
-    public GameObject mainButtonsPanel; // Панель, где кнопки Play, Settings, Exit
-    public GameObject settingsWindow;   // Панель, где Слайдер и кнопка Back
+    private readonly MainMenuView _view;
+    private readonly IAudioService _audioService;
 
-    public void PlayGame() => SceneManager.LoadScene(1);
-
-    public void OpenSettings()
+    public MainMenuController(MainMenuView view, IAudioService audioService)
     {
-        settingsWindow.SetActive(true);    // Включаем настройки
-        mainButtonsPanel.SetActive(false); // Выключаем главные кнопки
+        _view = view;
+        _audioService = audioService;
+
+
+        _view.playButton.onClick.AddListener(PlayGame);
+        _view.settingsButton.onClick.AddListener(OpenSettings);
+        _view.backButton.onClick.AddListener(CloseSettings);
+
+
+        _view.volumeSlider.onValueChanged.AddListener(SetVolume);
     }
 
-    public void CloseSettings()
+    private void PlayGame() => SceneManager.LoadScene(2); 
+
+    private void OpenSettings()
     {
-        settingsWindow.SetActive(false);   // Выключаем настройки
-        mainButtonsPanel.SetActive(true);  // Возвращаем главные кнопки
+        _view.settingsWindow.SetActive(true);
+        _view.mainButtonsPanel.SetActive(false);
     }
 
-    public void SetVolume(float vol) => AudioListener.volume = vol;
+    private void CloseSettings()
+    {
+        _view.settingsWindow.SetActive(false);
+        _view.mainButtonsPanel.SetActive(true);
+    }
 
-    public void ExitGame() => Application.Quit();
+    private void SetVolume(float vol) => _audioService.SetVolume(vol);
+
+
 }

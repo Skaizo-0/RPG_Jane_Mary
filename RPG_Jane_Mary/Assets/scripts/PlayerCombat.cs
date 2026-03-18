@@ -16,17 +16,16 @@ public class PlayerCombat : MonoBehaviour
     public float magicRotationOffset = 0f;
 
     [Header("Кулдаун магии (ТЗ)")]
-    public float magicCooldown = 3f; // Время перезарядки в секундах
-    private float _lastMagicTime = -10f; // Время последнего выстрела
+    public float magicCooldown = 3f; 
+    private float _lastMagicTime = -10f; 
 
     private IInputService _input;
     private Transform _cam;
 
-    // Свойство для UI: возвращает значение от 0 до 1 (насколько готова магия)
-    // 0 - только что выстрелили (иконка темная), 1 - готова (иконка светлая)
+    
     public float MagicReadyProgress => Mathf.Clamp01((Time.time - _lastMagicTime) / magicCooldown);
 
-    // Метод из лекции (раздел 3.1.3) для внедрения зависимостей
+   
     public void Construct(IInputService input)
     {
         _input = input;
@@ -37,21 +36,20 @@ public class PlayerCombat : MonoBehaviour
     {
         if (_input == null) return;
 
-        // ЛКМ - Физическая атака
+       
         if (_input.AttackPhys)
         {
             RotateToCamera(physRotationOffset);
             animator.SetTrigger("AttackPhys");
-            // Урон наносится через Animation Event (DealPhysDamage)
+           
         }
 
-        // ПКМ - Магическая атака (с проверкой кулдауна по ТЗ)
+       
         if (_input.AttackMag && Time.time >= _lastMagicTime + magicCooldown)
         {
-            _lastMagicTime = Time.time; // Запоминаем время атаки
+            _lastMagicTime = Time.time; 
             RotateToCamera(magicRotationOffset);
             animator.SetTrigger("AttackMag");
-            // Выстрел происходит через Animation Event (ShootMagic)
         }
     }
 
@@ -69,7 +67,7 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    // ВЫЗЫВАЕТСЯ ЧЕРЕЗ ANIMATION EVENT
+
     public void ShootMagic()
     {
         if (magicPrefab != null && firePoint != null)
@@ -78,17 +76,16 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    // ВЫЗЫВАЕТСЯ ЧЕРЕЗ ANIMATION EVENT
+
     public void DealPhysDamage()
     {
-        // Смещение сферы урона на 1.5 метра вперед
+       
         Vector3 pos = transform.position + transform.forward * 1.5f + Vector3.up;
         Collider[] enemies = Physics.OverlapSphere(pos, physRange, enemyLayer);
 
         foreach (var enemy in enemies)
         {
-            // Инверсия зависимости (раздел 3.1.3 лекции): 
-            // зависим от интерфейса IDamageable, а не от конкретных классов врагов.
+
             if (enemy.TryGetComponent<IDamageable>(out var target))
             {
                 target.TakeDamage(physDamage, 0);

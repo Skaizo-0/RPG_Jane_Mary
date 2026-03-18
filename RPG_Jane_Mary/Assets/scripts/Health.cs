@@ -1,27 +1,30 @@
 using UnityEngine;
-using UnityEngine.UI;
 using System;
 using System.Collections;
 
 public class Health : MonoBehaviour, IDamageable
 {
+    [Header("Параметры HP")]
     public float maxHp = 100f;
     private float _currentHp;
 
-    // Реализация интерфейса для UI
+
     public float CurrentHealth => _currentHp;
     public float MaxHealth => maxHp;
 
-    public Slider worldHpSlider; // Полоска над головой (World Space)
+    [Header("Ссылки")]
     public Animator animator;
 
-    // Событие для Game Over (статическое, чтобы ловить везде)
+
+    public event Action<float, float> OnHealthChanged;
+
+
     public static event Action OnPlayerDeath;
 
     private void Start()
     {
         _currentHp = maxHp;
-        UpdateUI();
+        NotifyHealthChanged();
     }
 
     public void TakeDamage(float phys, float mag)
@@ -29,12 +32,15 @@ public class Health : MonoBehaviour, IDamageable
         if (_currentHp <= 0) return;
 
         _currentHp = Mathf.Clamp(_currentHp - (phys + mag), 0, maxHp);
-        UpdateUI();
+
+
+        NotifyHealthChanged();
 
         if (_currentHp > 0)
         {
             if (animator) animator.SetTrigger("GetHit");
-            // Если это игрок, включаем стан
+
+
             if (CompareTag("Player")) StartCoroutine(StunRoutine());
         }
         else
@@ -46,12 +52,14 @@ public class Health : MonoBehaviour, IDamageable
     public void SetHealth(float amount)
     {
         _currentHp = amount;
-        UpdateUI();
+        NotifyHealthChanged();
     }
 
-    private void UpdateUI()
+
+    private void NotifyHealthChanged()
     {
-        if (worldHpSlider != null) worldHpSlider.value = _currentHp / maxHp;
+
+        OnHealthChanged?.Invoke(_currentHp, maxHp);
     }
 
     private void Die()
@@ -60,11 +68,15 @@ public class Health : MonoBehaviour, IDamageable
 
         if (gameObject.CompareTag("Player"))
         {
-            OnPlayerDeath?.Invoke(); // Сообщаем системе Game Over
-            GetComponent<PlayerMovement>().enabled = false; // Выключаем WASD
+            OnPlayerDeath?.Invoke();
+
+
+            var move = GetComponent<PlayerMovement>();
+            if (move != null) move.enabled = false;
         }
         else
         {
+
             Destroy(gameObject, 3f);
         }
     }
@@ -73,7 +85,10 @@ public class Health : MonoBehaviour, IDamageable
     {
         var move = GetComponent<PlayerMovement>();
         if (move != null) move.enabled = false;
-        yield return new WaitForSeconds(0.5f); // Сделал чуть дольше для ТЗ
+
+        yield return new WaitForSeconds(0.5f);
+
+
         if (_currentHp > 0 && move != null) move.enabled = true;
     }
 }

@@ -11,12 +11,10 @@ public class HUD_Controller
         _combat = combat;
     }
 
-    // Этот метод вызывается из Bootstrapper в Update
     public void UpdateHud()
     {
         if (_view == null) return;
 
-        // Берем данные из модели и отдаем во вьюху
         float hpNormalized = _health.CurrentHealth / _health.MaxHealth;
         _view.hudHpSlider.value = hpNormalized;
         _view.hpText.text = $"{(int)_health.CurrentHealth} / {(int)_health.MaxHealth}";
