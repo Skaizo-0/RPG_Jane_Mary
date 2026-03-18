@@ -6,7 +6,7 @@ public class GameInteractor
     public GameInteractor(GameRepository repository)
     {
         _repository = repository;
-        _data = new PlayerData(); // Дефолтные данные
+        _data = new PlayerData(); 
     }
 
     public PlayerData Data => _data;

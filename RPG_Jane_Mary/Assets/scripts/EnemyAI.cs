@@ -1,11 +1,11 @@
 using UnityEngine;
 
-// Перечисление типов вынесено наружу, чтобы его видели другие скрипты
+
 public enum EnemyType { Melee, Ranged }
 
 public class EnemyAI : MonoBehaviour
 {
-    public EnemyType enemyType; // Используем общий тип
+    public EnemyType enemyType;
     public Transform player;
     public Animator animator;
 
@@ -25,10 +25,10 @@ public class EnemyAI : MonoBehaviour
     {
         _health = GetComponent<Health>();
 
-        // Если это маг, он должен бить издалека
+
         if (enemyType == EnemyType.Ranged) attackDist = 8f;
 
-        // Автоматически находим игрока по тегу, если забыли перетащить в инспекторе
+ 
         if (player == null)
         {
             GameObject p = GameObject.FindGameObjectWithTag("Player");
@@ -38,7 +38,7 @@ public class EnemyAI : MonoBehaviour
 
     void Update()
     {
-        // ИСПРАВЛЕНО: Обращаемся к CurrentHealth (с большой буквы)
+
         if (player == null || _health.CurrentHealth <= 0)
         {
             StopMoving();
@@ -94,7 +94,7 @@ public class EnemyAI : MonoBehaviour
     void Attack()
     {
         _lastAttackTime = Time.time;
-        // Триггеры должны совпадать с именами в Аниматоре моба
+     
         string trigger = (enemyType == EnemyType.Melee) ? "AttackPh" : "AttackMa";
         animator.SetTrigger(trigger);
 
@@ -104,10 +104,10 @@ public class EnemyAI : MonoBehaviour
 
     void ApplyMeleeDamage()
     {
-        // Проверяем дистанцию в момент удара
+
         if (player != null && Vector3.Distance(transform.position, player.position) <= attackDist + 1f)
         {
-            // Используем интерфейс IDamageable (Инверсия зависимости из лекции)
+           
             if (player.TryGetComponent<IDamageable>(out var target))
             {
                 target.TakeDamage(10, 0);
