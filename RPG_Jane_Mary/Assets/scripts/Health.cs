@@ -7,6 +7,7 @@ public class Health : MonoBehaviour, IDamageable
     [Header("Параметры HP")]
     public float maxHp = 100f;
     private float _currentHp;
+    public static event Action<GameObject> OnEnemyDeath;
 
 
     public float CurrentHealth => _currentHp;
