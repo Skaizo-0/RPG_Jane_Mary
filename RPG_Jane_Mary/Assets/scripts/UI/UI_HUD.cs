@@ -9,4 +9,5 @@ public class UI_HUD : MonoBehaviour
     public Slider hudHpSlider;
     public TextMeshProUGUI hpText;
     public Image magicIconOverlay;
+    public TextMeshProUGUI scoreText;
 }

@@ -77,7 +77,7 @@ public class Health : MonoBehaviour, IDamageable
         }
         else
         {
-
+            OnEnemyDeath?.Invoke(gameObject);
             Destroy(gameObject, 3f);
         }
     }

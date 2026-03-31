@@ -105,7 +105,21 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-   public virtual void TryAttackLogic()
+    public virtual void BossPerformAction()
+    {
+        // Обычные и редкие мобы просто вызывают свою стандартную логику урона
+        // Мы можем просто оставить это место пустым или вызвать магию
+        if (enemyType == EnemyType.Ranged)
+        {
+            LaunchMagic();
+        }
+        else
+        {
+            ApplyMeleeDamage();
+        }
+    }
+
+    public virtual void TryAttackLogic()
     {
         if (Time.time > _lastAttackTime + _attackCooldown)
         {
