@@ -1,80 +1,136 @@
 using UnityEngine;
-
-// Определяем стихии для Босса (согласно ТЗ Лабы 6)
 public enum ElementType { Fire, Ice, Earth, Ether }
-
 public class BossAI : EnemyAI
 {
     [Header("Настройки Босса (Лаба 6)")]
-    public ElementType currentElement; // Выбранная стихия
-    public bool isMeleeWeapon;        // Выбранный тип оружия (галочка = ближний бой)
+    public ElementType currentElement;
+    public bool isMeleeWeapon;
 
     [Header("Ссылки на оружие")]
-    public GameObject rangedStaff;    // Staff01 (для магии)
-    public GameObject meleeStaff;     // Staff02 (для ударов)
+    public GameObject rangedStaff;
+    public GameObject meleeStaff;
 
     [Header("Уникальные эффекты стихий")]
     public AudioSource audioSource;
-    public AudioClip[] elementSounds;       // 4 звука (Fire, Ice, Earth, Ether)
-    public GameObject[] elementProjectiles; // 4 разных префаба шаров (разные цвета частиц)
+    public AudioClip[] elementSounds;
+    public GameObject[] elementProjectiles;
+
+    [Header("Баланс Босса")]
+    public float damageMultiplier = 1f;
+
+    public StrongAttackState StrongAttackState { get; private set; }
+    public DefensiveState DefensiveState { get; private set; }
+    public EnragedState EnragedState { get; private set; }
+
+    private int _attackCounter = 0;
+    private bool _isEnraged = false;
+    private bool _isFleeing = false;
+
+    protected override void Awake()
+    {
+        base.Awake(); // Создает Idle, Aggro, Attack, Flee
+        StrongAttackState = new StrongAttackState(this, StateMachine);
+        DefensiveState = new DefensiveState(this, StateMachine);
+        EnragedState = new EnragedState(this, StateMachine);
+    }
 
     protected override void Start()
     {
-        // 1. Инициализируем базовую логику (поиск игрока и т.д.)
-        base.Start();
-
-        // 2. Настраиваем оружие и дистанцию
+        base.Start(); // Здесь включится агр при первом ударе
         SetupBoss();
+    }
+
+    protected override void Update()
+    {
+        if (player == null || Health.CurrentHealth <= 0) return;
+
+        // 1. УСЛОВИЕ БЕГСТВА (HP < 15%)
+        // Если здоровья критически мало, босс бросает всё и убегает
+        if (!_isFleeing && Health.CurrentHealth < (Health.MaxHealth * 0.15f))
+        {
+            _isFleeing = true;
+            StateMachine.ChangeState(FleeState);
+            return;
+        }
+
+        // 2. ПЕРЕХОД В ЯРОСТЬ (HP < 50%)
+        // Босс злится, увеличивает урон и проигрывает анимацию Roar
+        if (!_isEnraged && Health.CurrentHealth < (Health.MaxHealth * 0.5f))
+        {
+            _isEnraged = true;
+            damageMultiplier = 2f; // Урон в 2 раза выше
+            StateMachine.ChangeState(EnragedState);
+            return;
+        }
+
+        base.Update();
     }
 
     void SetupBoss()
     {
-        // Включаем нужную модель посоха
         if (rangedStaff != null) rangedStaff.SetActive(!isMeleeWeapon);
         if (meleeStaff != null) meleeStaff.SetActive(isMeleeWeapon);
-
-        // Устанавливаем дистанцию атаки в зависимости от оружия
         attackDist = isMeleeWeapon ? 2.5f : 8f;
-
-        Debug.Log($"Босс появился! Оружие: {(isMeleeWeapon ? "Ближнее" : "Дальнее")}, Стихия: {currentElement}");
+        _attackCooldown = 3f;
     }
 
-    // Этот метод вызывается через Animation Event в окне Animation на кадре удара/выстрела
-    public void BossPerformAction()
+    public override void TryAttackLogic()
     {
-        int index = (int)currentElement; // Индекс в массиве (0=Огонь, 1=Лед и т.д.)
+        // В ярости атакует в 2 раза быстрее
+        float actualCD = _isEnraged ? _attackCooldown / 2f : _attackCooldown;
+        if (Time.time < _lastAttackTime + actualCD) return;
 
-        if (isMeleeWeapon)
+        _lastAttackTime = Time.time;
+        _attackCounter++;
+
+        if (_attackCounter >= 3)
         {
-            // УСЛОВИЕ ТЗ: Для ближнего боя меняем ЗВУК
-            if (elementSounds.Length > index && elementSounds[index] != null)
-            {
-                audioSource.PlayOneShot(elementSounds[index]);
-            }
-
-            // Наносим урон игроку (метод из родительского EnemyAI)
-            ApplyMeleeDamage();
-            Debug.Log($"Босс ударил мечом со звуком стихии {currentElement}");
+            _attackCounter = 0;
+            StateMachine.ChangeState(StrongAttackState);
         }
         else
         {
-            // УСЛОВИЕ ТЗ: Для дальнего боя меняем ВИД (ЦВЕТ) СНАРЯДА
-            if (elementProjectiles.Length > index && elementProjectiles[index] != null)
-            {
-                // Спавним шар нужной стихии
-                Instantiate(elementProjectiles[index], firePoint.position, transform.rotation);
-            }
-            Debug.Log($"Босс выпустил магию стихии {currentElement}");
+            string trigger = isMeleeWeapon ? "AttackPh" : "AttackMa";
+            animator.SetTrigger(trigger);
+
+            // Шанс уйти в защиту только если босс НЕ в ярости
+            if (!_isEnraged && Random.value > 0.8f)
+                StateMachine.ChangeState(DefensiveState);
         }
     }
 
-    // Переопределяем логику атаки, чтобы она подходила под аниматор босса
-    public override void TryAttackLogic()
+    public override void BossPerformAction()
     {
-        // Здесь мы просто запускаем нужный триггер в зависимости от галочки
-        string trigger = isMeleeWeapon ? "AttackPh" : "AttackMa";
-        animator.SetTrigger(trigger);
+        // Если игрок успел убежать далеко, пока босс махал палкой — не стреляем
+        if (Vector3.Distance(transform.position, player.position) > attackDist + 3f) return;
 
-        // Кулдаун атаки обрабатывается в самом EnemyAI или AttackState
+        int index = (int)currentElement;
+        if (isMeleeWeapon)
+        {
+            if (elementSounds.Length > index && elementSounds[index] != null)
+                audioSource.PlayOneShot(elementSounds[index]);
+
+            ApplyBossDamage(10f * damageMultiplier);
+        }
+        else
+        {
+            if (elementProjectiles.Length > index && elementProjectiles[index] != null)
+            {
+                // Направление точно на игрока
+                Vector3 targetDir = (player.position + Vector3.up - firePoint.position).normalized;
+                Instantiate(elementProjectiles[index], firePoint.position, Quaternion.LookRotation(targetDir));
+            }
+        }
+    }
+
+    private void ApplyBossDamage(float finalDamage)
+    {
+        if (player != null && Vector3.Distance(transform.position, player.position) <= attackDist + 1.5f)
+        {
+            if (player.TryGetComponent<IDamageable>(out var target))
+            {
+                target.TakeDamage(finalDamage, 0);
+            }
+        }
     }
 }

@@ -2239,7 +2239,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 52b751e1467c86747b290f0495cef822, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 100
+  maxHp: 500
   animator: {fileID: 3550965107167859527}
 --- !u!114 &266370699169192807
 MonoBehaviour:
@@ -2256,6 +2256,7 @@ MonoBehaviour:
   enemyType: 1
   player: {fileID: 0}
   animator: {fileID: 3550965107167859527}
+  controller: {fileID: 0}
   chaseDistance: 15
   attackDist: 8
   speed: 2
@@ -2277,6 +2278,7 @@ MonoBehaviour:
   - {fileID: 1923774466051800111, guid: de6630ba36234314d88933329411997b, type: 3}
   - {fileID: 1923774466051800111, guid: a08d6d4cfb3309e499c7fbee9e02621f, type: 3}
   - {fileID: 1923774466051800111, guid: 558aa8c7e9daf9144bc897cee71babd6, type: 3}
+  damageMultiplier: 1
 --- !u!1 &7102279935489848682
 GameObject:
   m_ObjectHideFlags: 0

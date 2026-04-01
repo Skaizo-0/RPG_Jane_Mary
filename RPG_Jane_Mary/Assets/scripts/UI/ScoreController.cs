@@ -39,7 +39,7 @@ public class ScoreController : MonoBehaviour
         UpdateScoreUI();
 
         // 1. Событие: Босс после 3-х мобов
-        if (_killCount == 3)
+        if (_killCount == 1)
         {
             SpawnBoss();
         }
