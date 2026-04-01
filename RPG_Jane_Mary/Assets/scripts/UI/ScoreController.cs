@@ -15,10 +15,10 @@ public class ScoreController : MonoBehaviour
 
     private void Start()
     {
-        // Получаем аудио сервис из локатора (как в Лабе 3)
+
         _audioService = ServiceLocator.Get<IAudioService>();
 
-        // Подписываемся на статическое событие из твоего скрипта Health
+
         Health.OnEnemyDeath += HandleKill;
 
         UpdateScoreUI();
@@ -26,26 +26,26 @@ public class ScoreController : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Обязательно отписываемся (Лекция 3, раздел 4.1)
+
         Health.OnEnemyDeath -= HandleKill;
     }
 
     private void HandleKill(GameObject victim)
     {
-        // Не считаем за очки смерть самого босса
+
         if (victim.CompareTag("Boss")) return;
 
         _killCount++;
         UpdateScoreUI();
 
-        // 1. Событие: Босс после 3-х мобов
-        if (_killCount == 1)
+ 
+        if (_killCount == 2)
         {
             SpawnBoss();
         }
 
-        // 2. Событие: Победная мелодия после 5 мобов
-        if (_killCount == 5)
+
+        if (_killCount == 3)
         {
             PlayVictory();
         }
@@ -61,15 +61,15 @@ public class ScoreController : MonoBehaviour
     {
         if (bossPrefab == null || bossSpawnPoint == null) return;
 
-        // 1. Создаем босса
+
         GameObject spawnedBoss = Instantiate(bossPrefab, bossSpawnPoint.position, bossSpawnPoint.rotation);
 
-        // 2. Находим на нем скрипт
+
         BossAI bossScript = spawnedBoss.GetComponent<BossAI>();
 
         if (bossScript != null)
         {
-            // 3. Передаем ему игрока (ищем его на сцене один раз)
+  
             bossScript.player = GameObject.FindGameObjectWithTag("Player").transform;
         }
     }

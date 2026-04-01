@@ -2,7 +2,7 @@ using UnityEngine;
 public enum ElementType { Fire, Ice, Earth, Ether }
 public class BossAI : EnemyAI
 {
-    [Header("Настройки Босса (Лаба 6)")]
+    [Header("Настройки Босса")]
     public ElementType currentElement;
     public bool isMeleeWeapon;
 
@@ -28,7 +28,7 @@ public class BossAI : EnemyAI
 
     protected override void Awake()
     {
-        base.Awake(); // Создает Idle, Aggro, Attack, Flee
+        base.Awake(); 
         StrongAttackState = new StrongAttackState(this, StateMachine);
         DefensiveState = new DefensiveState(this, StateMachine);
         EnragedState = new EnragedState(this, StateMachine);
@@ -36,7 +36,7 @@ public class BossAI : EnemyAI
 
     protected override void Start()
     {
-        base.Start(); // Здесь включится агр при первом ударе
+        base.Start(); 
         SetupBoss();
     }
 
@@ -44,8 +44,7 @@ public class BossAI : EnemyAI
     {
         if (player == null || Health.CurrentHealth <= 0) return;
 
-        // 1. УСЛОВИЕ БЕГСТВА (HP < 15%)
-        // Если здоровья критически мало, босс бросает всё и убегает
+
         if (!_isFleeing && Health.CurrentHealth < (Health.MaxHealth * 0.15f))
         {
             _isFleeing = true;
@@ -53,12 +52,10 @@ public class BossAI : EnemyAI
             return;
         }
 
-        // 2. ПЕРЕХОД В ЯРОСТЬ (HP < 50%)
-        // Босс злится, увеличивает урон и проигрывает анимацию Roar
         if (!_isEnraged && Health.CurrentHealth < (Health.MaxHealth * 0.5f))
         {
             _isEnraged = true;
-            damageMultiplier = 2f; // Урон в 2 раза выше
+            damageMultiplier = 2f; 
             StateMachine.ChangeState(EnragedState);
             return;
         }
@@ -76,7 +73,6 @@ public class BossAI : EnemyAI
 
     public override void TryAttackLogic()
     {
-        // В ярости атакует в 2 раза быстрее
         float actualCD = _isEnraged ? _attackCooldown / 2f : _attackCooldown;
         if (Time.time < _lastAttackTime + actualCD) return;
 
@@ -93,7 +89,6 @@ public class BossAI : EnemyAI
             string trigger = isMeleeWeapon ? "AttackPh" : "AttackMa";
             animator.SetTrigger(trigger);
 
-            // Шанс уйти в защиту только если босс НЕ в ярости
             if (!_isEnraged && Random.value > 0.8f)
                 StateMachine.ChangeState(DefensiveState);
         }
@@ -101,7 +96,6 @@ public class BossAI : EnemyAI
 
     public override void BossPerformAction()
     {
-        // Если игрок успел убежать далеко, пока босс махал палкой — не стреляем
         if (Vector3.Distance(transform.position, player.position) > attackDist + 3f) return;
 
         int index = (int)currentElement;
@@ -116,7 +110,6 @@ public class BossAI : EnemyAI
         {
             if (elementProjectiles.Length > index && elementProjectiles[index] != null)
             {
-                // Направление точно на игрока
                 Vector3 targetDir = (player.position + Vector3.up - firePoint.position).normalized;
                 Instantiate(elementProjectiles[index], firePoint.position, Quaternion.LookRotation(targetDir));
             }

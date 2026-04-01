@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class EnragedState : EnemyState
 {
-    private float _roarDuration = 2.5f; // Длительность крика
+    private float _roarDuration = 2.5f; 
     private float _timer;
 
     public EnragedState(EnemyAI enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine) { }
@@ -13,7 +13,7 @@ public class EnragedState : EnemyState
         enemy.StopMoving();
         enemy.animator.SetTrigger("Roar");
 
-        // Усиливаем босса визуально и физически
+
         enemy.speed *= 1.4f;
         Debug.Log("БОСС В ЯРОСТИ! СКОРОСТЬ УВЕЛИЧЕНА!");
     }
@@ -24,7 +24,7 @@ public class EnragedState : EnemyState
 
         if (_timer <= 0)
         {
-            // После того как проорался, возвращаемся к преследованию
+       
             stateMachine.ChangeState(enemy.AggroState);
         }
     }

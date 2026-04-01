@@ -51,16 +51,15 @@ public class EnemyAI : MonoBehaviour
 
         if (enemyType == EnemyType.Ranged) attackDist = 8f;
 
-        // ИСПРАВЛЕННАЯ ЛОГИКА АГРА
+
         Health.OnHealthChanged += (cur, max) =>
         {
             if (gameObject.CompareTag("Boss"))
             {
-                // Босс агрится сразу при первом же уроне
+
                 if (cur < max) isPeaceful = false;
             }
-            // Для остальных мобов ничего не меняем — они остаются в том режиме, 
-            // который ты задала в инспекторе (мирные так мирные).
+
         };
 
         StateMachine.Initialize(IdleState);
