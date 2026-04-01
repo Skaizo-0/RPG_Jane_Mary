@@ -6,7 +6,7 @@ public class AggroState : EnemyState
 
     public override void Update()
     {
-        
+        // НОВОЕ: Проверка на бегство во время преследования
         if (enemy.Health.CurrentHealth < (enemy.Health.MaxHealth * 0.3f))
         {
             stateMachine.ChangeState(enemy.FleeState);

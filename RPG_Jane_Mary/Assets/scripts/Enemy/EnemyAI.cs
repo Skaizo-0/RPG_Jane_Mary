@@ -1,7 +1,5 @@
 using UnityEngine;
-
 public enum EnemyType { Melee, Ranged }
-
 public class EnemyAI : MonoBehaviour
 {
     public EnemyType enemyType;
@@ -12,12 +10,13 @@ public class EnemyAI : MonoBehaviour
     public float chaseDistance = 15f;
     public float attackDist = 2.5f;
     public float speed = 2f;
-    public bool isPeaceful;
+    public bool isPeaceful; // Для ТЗ: мирный режим
 
     [Header("Для Мага")]
     public GameObject magicPrefab;
     public Transform firePoint;
 
+    // Ссылки на машину состояний и сами состояния
     public EnemyStateMachine StateMachine { get; private set; }
     public IdleState IdleState { get; private set; }
     public AggroState AggroState { get; private set; }
@@ -28,11 +27,11 @@ public class EnemyAI : MonoBehaviour
     private float _attackCooldown = 2f;
     private float _lastAttackTime;
 
-    
-    protected virtual void Awake()
+    private void Awake()
     {
         Health = GetComponent<Health>();
 
+        // Инициализация FSM
         StateMachine = new EnemyStateMachine();
         IdleState = new IdleState(this, StateMachine);
         AggroState = new AggroState(this, StateMachine);
@@ -42,12 +41,21 @@ public class EnemyAI : MonoBehaviour
 
     protected virtual void Start()
     {
+        // ... (твой старый код Start) ...
+
+        // ПОДПИСКА НА УРОН
         Health.OnHealthChanged += (cur, max) =>
         {
+            // Если это Босс (можно определить по типу или тегу)
+            // Он выходит из мирного режима при первом ударе
             if (gameObject.CompareTag("Boss") && cur < max)
             {
                 isPeaceful = false;
             }
+
+            // Если это обычный моб - мы НИЧЕГО не делаем. 
+            // Он остается isPeaceful = true, поэтому AggroState не включится.
+            // Он просто дождется, пока cur < 30% и уйдет в FleeState из Idle.
         };
 
         StateMachine.Initialize(IdleState);
@@ -61,8 +69,11 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
+        // ВСЯ логика теперь внутри текущего состояния
         StateMachine.CurrentState.Update();
     }
+
+    // --- Методы, которые вызываются из Состояний ---
 
     public void MoveToPlayer()
     {
@@ -96,6 +107,8 @@ public class EnemyAI : MonoBehaviour
 
     public virtual void BossPerformAction()
     {
+        // Обычные и редкие мобы просто вызывают свою стандартную логику урона
+        // Мы можем просто оставить это место пустым или вызвать магию
         if (enemyType == EnemyType.Ranged)
         {
             LaunchMagic();
@@ -130,8 +143,7 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-
-    protected void LaunchMagic()
+    private void LaunchMagic()
     {
         if (firePoint && magicPrefab)
         {

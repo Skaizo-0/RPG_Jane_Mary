@@ -1,101 +1,80 @@
 using UnityEngine;
 
-
+// Определяем стихии для Босса (согласно ТЗ Лабы 6)
 public enum ElementType { Fire, Ice, Earth, Ether }
 
 public class BossAI : EnemyAI
 {
     [Header("Настройки Босса (Лаба 6)")]
-    public ElementType currentElement;
-    public bool isMeleeWeapon;
+    public ElementType currentElement; // Выбранная стихия
+    public bool isMeleeWeapon;        // Выбранный тип оружия (галочка = ближний бой)
+
     [Header("Ссылки на оружие")]
-    public GameObject rangedStaff;
-    public GameObject meleeStaff;
+    public GameObject rangedStaff;    // Staff01 (для магии)
+    public GameObject meleeStaff;     // Staff02 (для ударов)
 
     [Header("Уникальные эффекты стихий")]
     public AudioSource audioSource;
-    public AudioClip[] elementSounds;
-    public GameObject[] elementProjectiles;
-
-    public StrongAttackState StrongAttackState { get; private set; }
-    public DefensiveState DefensiveState { get; private set; }
-    public EnragedState EnragedState { get; private set; }
-
-    private int _attackCounter = 0;
-    private bool _isEnraged = false;
-
-    protected override void Awake()
-    {
-        
-        base.Awake();
-
-        StrongAttackState = new StrongAttackState(this, StateMachine);
-        DefensiveState = new DefensiveState(this, StateMachine);
-        EnragedState = new EnragedState(this, StateMachine);
-    }
+    public AudioClip[] elementSounds;       // 4 звука (Fire, Ice, Earth, Ether)
+    public GameObject[] elementProjectiles; // 4 разных префаба шаров (разные цвета частиц)
 
     protected override void Start()
     {
+        // 1. Инициализируем базовую логику (поиск игрока и т.д.)
         base.Start();
+
+        // 2. Настраиваем оружие и дистанцию
         SetupBoss();
-        isPeaceful = true;
-    }
-
-    protected override void Update()
-    {
-        base.Update();
-
-        if (!_isEnraged && Health.CurrentHealth < (Health.MaxHealth * 0.25f))
-        {
-            _isEnraged = true;
-            StateMachine.ChangeState(EnragedState);
-        }
     }
 
     void SetupBoss()
     {
+        // Включаем нужную модель посоха
         if (rangedStaff != null) rangedStaff.SetActive(!isMeleeWeapon);
         if (meleeStaff != null) meleeStaff.SetActive(isMeleeWeapon);
+
+        // Устанавливаем дистанцию атаки в зависимости от оружия
         attackDist = isMeleeWeapon ? 2.5f : 8f;
+
+        Debug.Log($"Босс появился! Оружие: {(isMeleeWeapon ? "Ближнее" : "Дальнее")}, Стихия: {currentElement}");
     }
 
-    
-    public override void BossPerformAction()
+    // Этот метод вызывается через Animation Event в окне Animation на кадре удара/выстрела
+    public void BossPerformAction()
     {
-        int index = (int)currentElement;
+        int index = (int)currentElement; // Индекс в массиве (0=Огонь, 1=Лед и т.д.)
 
         if (isMeleeWeapon)
         {
+            // УСЛОВИЕ ТЗ: Для ближнего боя меняем ЗВУК
             if (elementSounds.Length > index && elementSounds[index] != null)
             {
                 audioSource.PlayOneShot(elementSounds[index]);
             }
+
+            // Наносим урон игроку (метод из родительского EnemyAI)
             ApplyMeleeDamage();
+            Debug.Log($"Босс ударил мечом со звуком стихии {currentElement}");
         }
         else
         {
+            // УСЛОВИЕ ТЗ: Для дальнего боя меняем ВИД (ЦВЕТ) СНАРЯДА
             if (elementProjectiles.Length > index && elementProjectiles[index] != null)
             {
+                // Спавним шар нужной стихии
                 Instantiate(elementProjectiles[index], firePoint.position, transform.rotation);
             }
+            Debug.Log($"Босс выпустил магию стихии {currentElement}");
         }
     }
 
+    // Переопределяем логику атаки, чтобы она подходила под аниматор босса
     public override void TryAttackLogic()
     {
-        _attackCounter++;
+        // Здесь мы просто запускаем нужный триггер в зависимости от галочки
+        string trigger = isMeleeWeapon ? "AttackPh" : "AttackMa";
+        animator.SetTrigger(trigger);
 
-        if (_attackCounter >= 3)
-        {
-            _attackCounter = 0;
-            StateMachine.ChangeState(StrongAttackState);
-        }
-        else
-        {
-            string trigger = isMeleeWeapon ? "AttackPh" : "AttackMa";
-            animator.SetTrigger(trigger);
-
-            if (Random.value > 0.8f) StateMachine.ChangeState(DefensiveState);
-        }
+        // Кулдаун атаки обрабатывается в самом EnemyAI или AttackState
     }
 }
