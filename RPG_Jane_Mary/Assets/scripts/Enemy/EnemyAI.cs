@@ -29,6 +29,9 @@ public class EnemyAI : MonoBehaviour
     protected float _attackCooldown = 2f;
     protected float _lastAttackTime;
 
+    // --- НОВОЕ: Переменная для гравитации ---
+    private float _verticalVelocity;
+
     protected virtual void Awake()
     {
         Health = GetComponent<Health>();
@@ -51,15 +54,12 @@ public class EnemyAI : MonoBehaviour
 
         if (enemyType == EnemyType.Ranged) attackDist = 8f;
 
-
         Health.OnHealthChanged += (cur, max) =>
         {
             if (gameObject.CompareTag("Boss"))
             {
-
                 if (cur < max) isPeaceful = false;
             }
-
         };
 
         StateMachine.Initialize(IdleState);
@@ -69,38 +69,72 @@ public class EnemyAI : MonoBehaviour
     {
         if (player == null || Health.CurrentHealth <= 0)
         {
+            ApplyGravity(); // Даже мертвый или стоячий должен падать, если он в воздухе
             StopMoving();
             return;
         }
+
+        ApplyGravity(); // Вызываем гравитацию каждый кадр
         StateMachine.CurrentState.Update();
+    }
+
+    // --- НОВОЕ: Метод для гравитации ---
+    private void ApplyGravity()
+    {
+        if (controller.isGrounded && _verticalVelocity < 0)
+        {
+            _verticalVelocity = -2f; // Прижимаем к земле, чтобы isGrounded работал стабильно
+        }
+        else
+        {
+            _verticalVelocity += Physics.gravity.y * Time.deltaTime;
+        }
+
+        // Применяем только вертикальное движение
+        controller.Move(new Vector3(0, _verticalVelocity, 0) * Time.deltaTime);
     }
 
     public void MoveToPlayer()
     {
         Vector3 dir = (player.position - transform.position).normalized;
-        dir.y = 0;
-        controller.Move(dir * speed * Time.deltaTime);
-        animator.SetFloat("Speed", 0.5f);
+        MoveInDirection(dir); // Используем общий метод для единообразия
     }
 
     public void MoveInDirection(Vector3 dir)
     {
-        dir.y = 0;
-        controller.Move(dir * speed * Time.deltaTime);
-        if (dir != Vector3.zero)
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 5f * Time.deltaTime);
-        animator.SetFloat("Speed", 0.5f);
+        dir.y = 0; // Направление только по горизонтали
+
+        if (dir.magnitude > 0.1f)
+        {
+            // Двигаемся
+            controller.Move(dir * speed * Time.deltaTime);
+
+            // Поворачиваемся лицо в сторону бега (важно для бегства!)
+            Quaternion targetRotation = Quaternion.LookRotation(dir);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.deltaTime);
+
+            animator.SetFloat("Speed", 0.5f);
+        }
+        else
+        {
+            StopMoving();
+        }
     }
 
-    public void StopMoving() { animator.SetFloat("Speed", 0); }
+    public void StopMoving()
+    {
+        animator.SetFloat("Speed", 0);
+    }
 
     public void SmoothRotateToPlayer()
     {
         Vector3 lookDir = player.position - transform.position;
         lookDir.y = 0;
-        if (lookDir != Vector3.zero) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookDir), 5f * Time.deltaTime);
+        if (lookDir.magnitude > 0.1f)
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookDir), 5f * Time.deltaTime);
     }
 
+    // ... остальной код (атаки, магия) без изменений ...
     public virtual void BossPerformAction() { if (enemyType == EnemyType.Ranged) LaunchMagic(); else ApplyMeleeDamage(); }
 
     public virtual void TryAttackLogic()
