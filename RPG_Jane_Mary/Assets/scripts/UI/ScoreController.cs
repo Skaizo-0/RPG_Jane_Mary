@@ -38,7 +38,7 @@ public class ScoreController : MonoBehaviour
         _killCount++;
         UpdateScoreUI();
 
- 
+
         if (_killCount == 2)
         {
             SpawnBoss();
@@ -69,7 +69,7 @@ public class ScoreController : MonoBehaviour
 
         if (bossScript != null)
         {
-  
+
             bossScript.player = GameObject.FindGameObjectWithTag("Player").transform;
         }
     }
@@ -77,9 +77,32 @@ public class ScoreController : MonoBehaviour
     private void PlayVictory()
     {
         Debug.Log("СОБЫТИЕ: Победная музыка!");
-        if (victoryMusic != null)
+
+        // ПРОВЕРКА 1: Есть ли сама музыка в слоте инспектора?
+        if (victoryMusic == null)
+        {
+            Debug.LogError("Ошибка: Ты забыл закинуть аудио-файл в слот Victory Music в инспекторе!");
+            return;
+        }
+
+        // ПРОВЕРКА 2: Нашелся ли сервис звука?
+        if (_audioService != null)
         {
             _audioService.PlayMusic(victoryMusic);
+        }
+        else
+        {
+            // Если сервис не нашелся, попробуем найти его еще раз (на всякий случай)
+            _audioService = ServiceLocator.Get<IAudioService>();
+
+            if (_audioService != null)
+            {
+                _audioService.PlayMusic(victoryMusic);
+            }
+            else
+            {
+                Debug.LogError("КРИТИЧЕСКАЯ ОШИБКА: Сервис звука всё еще не найден! Проверь сцену!");
+            }
         }
     }
 }

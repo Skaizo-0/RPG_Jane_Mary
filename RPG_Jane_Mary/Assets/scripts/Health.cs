@@ -1,48 +1,65 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using FishNet.Object;
+using FishNet.Object.Synchronizing; // Обязательно
 
-public class Health : MonoBehaviour, IDamageable
+public class Health : NetworkBehaviour, IDamageable
 {
     [Header("Параметры HP")]
     public float maxHp = 100f;
-    private float _currentHp;
+
+    // В FishNet 4.0+ используем readonly SyncVar<T>
+    private readonly SyncVar<float> _currentHp = new SyncVar<float>();
+
     public static event Action<GameObject> OnEnemyDeath;
+    public event Action<float, float> OnHealthChanged;
+    public static event Action OnPlayerDeath;
 
-
-    public float CurrentHealth => _currentHp;
+    // Читаем значение через .Value
+    public float CurrentHealth => _currentHp.Value;
     public float MaxHealth => maxHp;
 
     [Header("Ссылки")]
     public Animator animator;
 
-
-    public event Action<float, float> OnHealthChanged;
-
-
-    public static event Action OnPlayerDeath;
-
-    private void Start()
+    public override void OnStartNetwork()
     {
-        _currentHp = maxHp;
-        NotifyHealthChanged();
+        base.OnStartNetwork();
+
+        // Подписываемся на обновление здоровья
+        _currentHp.OnChange += OnHpChanged;
+
+        if (IsServer)
+        {
+            _currentHp.Value = maxHp;
+        }
+    }
+
+    public override void OnStopNetwork()
+    {
+        base.OnStopNetwork();
+        // Отписываемся при уничтожении
+        _currentHp.OnChange -= OnHpChanged;
+    }
+
+    private void OnHpChanged(float prev, float next, bool asServer)
+    {
+        OnHealthChanged?.Invoke(next, maxHp);
     }
 
     public void TakeDamage(float phys, float mag)
     {
-        if (_currentHp <= 0) return;
+        if (!IsServer) return;
 
-        _currentHp = Mathf.Clamp(_currentHp - (phys + mag), 0, maxHp);
+        if (_currentHp.Value <= 0) return;
 
+        // Меняем через .Value
+        _currentHp.Value = Mathf.Clamp(_currentHp.Value - (phys + mag), 0, maxHp);
 
-        NotifyHealthChanged();
-
-        if (_currentHp > 0)
+        if (_currentHp.Value > 0)
         {
-            if (animator) animator.SetTrigger("GetHit");
-
-
-            if (CompareTag("Player")) StartCoroutine(StunRoutine());
+            PlayHitObserversRpc();
         }
         else
         {
@@ -50,46 +67,54 @@ public class Health : MonoBehaviour, IDamageable
         }
     }
 
-    public void SetHealth(float amount)
+    [ObserversRpc]
+    private void PlayHitObserversRpc()
     {
-        _currentHp = amount;
-        NotifyHealthChanged();
+        if (animator) animator.SetTrigger("GetHit");
+        if (CompareTag("Player")) StartCoroutine(StunRoutine());
     }
 
-
-    private void NotifyHealthChanged()
+    public void SetHealth(float amount)
     {
-
-        OnHealthChanged?.Invoke(_currentHp, maxHp);
+        if (IsServer) _currentHp.Value = amount;
     }
 
     private void Die()
     {
-        if (animator) animator.SetTrigger("Die");
+        if (!IsServer) return;
+
+        PlayDieObserversRpc();
 
         if (gameObject.CompareTag("Player"))
         {
             OnPlayerDeath?.Invoke();
-
-
-            var move = GetComponent<PlayerMovement>();
-            if (move != null) move.enabled = false;
+            DisableMovementObserversRpc();
         }
         else
         {
             OnEnemyDeath?.Invoke(gameObject);
-            Destroy(gameObject, 3f);
+            ServerManager.Despawn(gameObject);
         }
+    }
+
+    [ObserversRpc]
+    private void PlayDieObserversRpc()
+    {
+        if (animator) animator.SetTrigger("Die");
+    }
+
+    [ObserversRpc]
+    private void DisableMovementObserversRpc()
+    {
+        var move = GetComponent<PlayerMovement>();
+        if (move != null) move.enabled = false;
     }
 
     private IEnumerator StunRoutine()
     {
         var move = GetComponent<PlayerMovement>();
         if (move != null) move.enabled = false;
-
         yield return new WaitForSeconds(0.5f);
-
-
-        if (_currentHp > 0 && move != null) move.enabled = true;
+        if (_currentHp.Value > 0 && move != null) move.enabled = true;
     }
 }

@@ -1,6 +1,7 @@
 using UnityEngine;
+using FishNet.Object;
 
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : NetworkBehaviour
 {
     public CharacterController controller;
     public Animator animator;
@@ -11,21 +12,45 @@ public class PlayerMovement : MonoBehaviour
     private Transform _cam;
     private float _gravityVelocity;
 
+    // Метод для Bootstrapper
     public void Construct(IInputService input)
     {
         _input = input;
-        _cam = Camera.main.transform; 
+        _cam = Camera.main.transform;
+    }
+
+    // Объединенный метод OnStartClient (только ОДИН раз)
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+
+        if (IsOwner)
+        {
+            _cam = Camera.main.transform;
+
+            // Регистрируем себя в Бутстраппере, когда появились в сети
+            if (Bootstrapper.Instance != null)
+            {
+                var combat = GetComponent<PlayerCombat>();
+                var health = GetComponent<Health>();
+                Bootstrapper.Instance.RegisterPlayer(this, combat, health);
+            }
+        }
+        else
+        {
+            // Чужим игрокам выключаем контроллер
+            if (controller != null) controller.enabled = false;
+        }
     }
 
     void Update()
     {
-        if (_input == null) return;
+        if (!IsOwner || _input == null) return;
 
         Vector3 inputDir = _input.MoveAxis;
 
         if (inputDir.magnitude > 0.1f)
         {
-          
             Vector3 camForward = _cam.forward;
             Vector3 camRight = _cam.right;
             camForward.y = 0; camRight.y = 0;
@@ -35,9 +60,7 @@ public class PlayerMovement : MonoBehaviour
             float currentSpeed = _input.IsRunning ? runSpeed : walkSpeed;
             controller.Move(moveDir * currentSpeed * Time.deltaTime);
 
-         
             transform.forward = Vector3.Slerp(transform.forward, moveDir, 10f * Time.deltaTime);
-
             animator.SetFloat("Speed", _input.IsRunning ? 1f : 0.5f, 0.1f, Time.deltaTime);
         }
         else
@@ -45,7 +68,11 @@ public class PlayerMovement : MonoBehaviour
             animator.SetFloat("Speed", 0f, 0.1f, Time.deltaTime);
         }
 
-       
+        ApplyGravity();
+    }
+
+    private void ApplyGravity()
+    {
         if (controller.isGrounded) _gravityVelocity = -2f;
         else _gravityVelocity += -9.81f * Time.deltaTime;
 
@@ -54,9 +81,11 @@ public class PlayerMovement : MonoBehaviour
 
     public void Teleport(Vector3 pos)
     {
-        controller.enabled = false; 
-        transform.position = pos;
-        controller.enabled = true;
+        if (IsOwner)
+        {
+            controller.enabled = false;
+            transform.position = pos;
+            controller.enabled = true;
+        }
     }
-
 }
