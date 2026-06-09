@@ -1244,7 +1244,7 @@ GameObject:
   - component: {fileID: 5627798851646455501}
   - component: {fileID: 5338567599551775088}
   - component: {fileID: 7313890668564637732}
-  - component: {fileID: 5843888388136648674}
+  - component: {fileID: 4805985512979165016}
   m_Layer: 0
   m_Name: PolyArtWizardMesh
   m_TagString: Untagged
@@ -1305,7 +1305,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _componentIndexCache: 0
-  _addedNetworkObject: {fileID: 5843888388136648674}
+  _addedNetworkObject: {fileID: 4805985512979165016}
   _networkObjectCache: {fileID: 0}
   maxHp: 100
   animator: {fileID: 5627798851646455501}
@@ -1331,7 +1331,7 @@ MonoBehaviour:
   isPeaceful: 0
   magicPrefab: {fileID: 1923774466051800111, guid: 558aa8c7e9daf9144bc897cee71babd6, type: 3}
   firePoint: {fileID: 3775499110233753641}
---- !u!114 &5843888388136648674
+--- !u!114 &4805985512979165016
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

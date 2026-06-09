@@ -6,6 +6,12 @@ public class AggroState : EnemyState
 
     public override void Update()
     {
+        // ПРОВЕРКА: Если игрок исчез, возвращаемся в Idle
+        if (enemy.player == null)
+        {
+            stateMachine.ChangeState(enemy.IdleState);
+            return;
+        }
 
         if (enemy.Health.CurrentHealth < (enemy.Health.MaxHealth * 0.3f))
         {

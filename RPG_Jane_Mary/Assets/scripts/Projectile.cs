@@ -66,18 +66,32 @@ public class Projectile : NetworkBehaviour // Изменили на NetworkBehav
 
     private void OnTriggerEnter(Collider other)
     {
-        // КЛЮЧЕВОЕ: Только сервер обрабатывает попадание и урон
         if (!IsServer) return;
 
-        if (other.CompareTag("Player")) return;
-
+        // 1. Пытаемся взять компонент здоровья у того, в кого попали
         if (other.TryGetComponent<IDamageable>(out var target))
         {
-            target.TakeDamage(0, damage);
-            DestroyProjectile(); // Сетевое удаление
+            // ПРОВЕРКА: Не попали ли мы в того, кто выпустил эту пулю?
+            // Если у пули нет Owner (это враг), то она может бить Игрока.
+            // Если Owner есть (это игрок), она не должна бить Игрока.
+
+            bool hitByAI = (Owner.ClientId == -1 || Owner == null); // Пуля от врага
+            bool targetIsPlayer = other.CompareTag("Player");
+
+            if (hitByAI && targetIsPlayer)
+            {
+                target.TakeDamage(0, damage); // Враг попал в игрока
+                DestroyProjectile();
+            }
+            else if (!targetIsPlayer)
+            {
+                target.TakeDamage(0, damage); // Игрок или враг попал в моба
+                DestroyProjectile();
+            }
         }
         else if (!other.isTrigger)
         {
+            // Попадание в стену
             DestroyProjectile();
         }
     }

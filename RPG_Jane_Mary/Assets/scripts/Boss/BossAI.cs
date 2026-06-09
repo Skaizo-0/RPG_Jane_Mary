@@ -1,5 +1,9 @@
 using UnityEngine;
+using FishNet.Object;
+
+// Объявляем ElementType здесь, чтобы ошибка исчезла
 public enum ElementType { Fire, Ice, Earth, Ether }
+
 public class BossAI : EnemyAI
 {
     [Header("Настройки Босса")]
@@ -28,22 +32,21 @@ public class BossAI : EnemyAI
 
     protected override void Awake()
     {
-        base.Awake(); 
+        base.Awake();
         StrongAttackState = new StrongAttackState(this, StateMachine);
         DefensiveState = new DefensiveState(this, StateMachine);
         EnragedState = new EnragedState(this, StateMachine);
     }
 
-    protected override void Start()
+    public override void OnStartServer()
     {
-        base.Start(); 
+        base.OnStartServer();
         SetupBoss();
     }
 
     protected override void Update()
     {
-        if (player == null || Health.CurrentHealth <= 0) return;
-
+        if (!IsServer || player == null || Health.CurrentHealth <= 0) return;
 
         if (!_isFleeing && Health.CurrentHealth < (Health.MaxHealth * 0.15f))
         {
@@ -55,7 +58,7 @@ public class BossAI : EnemyAI
         if (!_isEnraged && Health.CurrentHealth < (Health.MaxHealth * 0.5f))
         {
             _isEnraged = true;
-            damageMultiplier = 2f; 
+            damageMultiplier = 2f;
             StateMachine.ChangeState(EnragedState);
             return;
         }
@@ -67,12 +70,15 @@ public class BossAI : EnemyAI
     {
         if (rangedStaff != null) rangedStaff.SetActive(!isMeleeWeapon);
         if (meleeStaff != null) meleeStaff.SetActive(isMeleeWeapon);
+
         attackDist = isMeleeWeapon ? 2.5f : 8f;
         _attackCooldown = 3f;
     }
 
     public override void TryAttackLogic()
     {
+        if (!IsServer) return;
+
         float actualCD = _isEnraged ? _attackCooldown / 2f : _attackCooldown;
         if (Time.time < _lastAttackTime + actualCD) return;
 
@@ -94,16 +100,17 @@ public class BossAI : EnemyAI
         }
     }
 
+    // Теперь метод override работает, так как он есть в EnemyAI
     public override void BossPerformAction()
     {
+        if (!IsServer || player == null) return;
         if (Vector3.Distance(transform.position, player.position) > attackDist + 3f) return;
 
         int index = (int)currentElement;
+
         if (isMeleeWeapon)
         {
-            if (elementSounds.Length > index && elementSounds[index] != null)
-                audioSource.PlayOneShot(elementSounds[index]);
-
+            PlayElementSoundObserversRpc(index);
             ApplyBossDamage(10f * damageMultiplier);
         }
         else
@@ -111,8 +118,18 @@ public class BossAI : EnemyAI
             if (elementProjectiles.Length > index && elementProjectiles[index] != null)
             {
                 Vector3 targetDir = (player.position + Vector3.up - firePoint.position).normalized;
-                Instantiate(elementProjectiles[index], firePoint.position, Quaternion.LookRotation(targetDir));
+                GameObject projectile = Instantiate(elementProjectiles[index], firePoint.position, Quaternion.LookRotation(targetDir));
+                ServerManager.Spawn(projectile);
             }
+        }
+    }
+
+    [ObserversRpc]
+    private void PlayElementSoundObserversRpc(int index)
+    {
+        if (elementSounds.Length > index && elementSounds[index] != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(elementSounds[index]);
         }
     }
 

@@ -6,6 +6,12 @@ public class IdleState : EnemyState
 
     public override void Update()
     {
+        // ПРОВЕРКА: Если игрока нет, враг просто стоит и ничего не делает
+        if (enemy.player == null)
+        {
+            enemy.StopMoving();
+            return;
+        }
 
         if (enemy.Health.CurrentHealth < (enemy.Health.MaxHealth * 0.3f))
         {
@@ -13,9 +19,7 @@ public class IdleState : EnemyState
             return;
         }
 
-
         if (enemy.isPeaceful) return;
-
 
         if (Vector3.Distance(enemy.transform.position, enemy.player.position) < enemy.chaseDistance)
         {

@@ -6,18 +6,22 @@ public class AttackState : EnemyState
 
     public override void Update()
     {
+        // ПРОВЕРКА: Если игрок исчез, возвращаемся в Idle
+        if (enemy.player == null)
+        {
+            stateMachine.ChangeState(enemy.IdleState);
+            return;
+        }
 
         enemy.SmoothRotateToPlayer();
 
         float dist = Vector3.Distance(enemy.transform.position, enemy.player.position);
-
 
         if (dist > enemy.attackDist + 1f)
         {
             stateMachine.ChangeState(enemy.AggroState);
             return;
         }
-
 
         enemy.TryAttackLogic();
     }

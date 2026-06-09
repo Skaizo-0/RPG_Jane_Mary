@@ -27,7 +27,7 @@ public class PlayerMovement : NetworkBehaviour
         if (IsOwner)
         {
             _cam = Camera.main.transform;
-
+            _gravityVelocity = 0;
             // Регистрируем себя в Бутстраппере, когда появились в сети
             if (Bootstrapper.Instance != null)
             {
@@ -83,9 +83,13 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (IsOwner)
         {
-            controller.enabled = false;
+            controller.enabled = false; // Выключаем контроллер
+            _gravityVelocity = 0;       // Сбрасываем гравитацию!
             transform.position = pos;
-            controller.enabled = true;
+
+            Physics.SyncTransforms();   // ЗАСТАВЛЯЕМ физику увидеть новую позицию пола
+
+            controller.enabled = true;  // Включаем обратно
         }
     }
 }

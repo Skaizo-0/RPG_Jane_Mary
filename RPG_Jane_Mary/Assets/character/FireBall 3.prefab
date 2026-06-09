@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 609611687099679382}
   - component: {fileID: 4609727262911644884}
   - component: {fileID: -5833453787466177998}
-  - component: {fileID: 5682894235410644180}
+  - component: {fileID: -7381469488627849092}
   m_Layer: 0
   m_Name: FireBall 3
   m_TagString: Untagged
@@ -155,7 +155,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _componentIndexCache: 0
-  _addedNetworkObject: {fileID: 5682894235410644180}
+  _addedNetworkObject: {fileID: -7381469488627849092}
   _networkObjectCache: {fileID: 0}
   speed: 15
   damage: 20
@@ -166,7 +166,7 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 0
---- !u!114 &5682894235410644180
+--- !u!114 &-7381469488627849092
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

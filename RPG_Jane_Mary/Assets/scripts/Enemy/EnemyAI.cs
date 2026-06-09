@@ -1,8 +1,11 @@
 using UnityEngine;
+using FishNet.Object;
+using FishNet.Connection;
+using System.Collections.Generic;
 
 public enum EnemyType { Melee, Ranged }
 
-public class EnemyAI : MonoBehaviour
+public class EnemyAI : NetworkBehaviour
 {
     public EnemyType enemyType;
     public Transform player;
@@ -29,7 +32,6 @@ public class EnemyAI : MonoBehaviour
     protected float _attackCooldown = 2f;
     protected float _lastAttackTime;
 
-    // --- НОВОЕ: Переменная для гравитации ---
     private float _verticalVelocity;
 
     protected virtual void Awake()
@@ -44,13 +46,9 @@ public class EnemyAI : MonoBehaviour
         FleeState = new FleeState(this, StateMachine);
     }
 
-    protected virtual void Start()
+    public override void OnStartServer()
     {
-        if (player == null)
-        {
-            GameObject p = GameObject.FindGameObjectWithTag("Player");
-            if (p != null) player = p.transform;
-        }
+        base.OnStartServer();
 
         if (enemyType == EnemyType.Ranged) attackDist = 8f;
 
@@ -67,52 +65,69 @@ public class EnemyAI : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (player == null || Health.CurrentHealth <= 0)
+        if (!IsServer) return;
+
+        if (Health.CurrentHealth <= 0)
         {
-            ApplyGravity(); // Даже мертвый или стоячий должен падать, если он в воздухе
+            ApplyGravity();
             StopMoving();
             return;
         }
 
-        ApplyGravity(); // Вызываем гравитацию каждый кадр
+        FindNearestPlayer();
+        ApplyGravity();
         StateMachine.CurrentState.Update();
     }
 
-    // --- НОВОЕ: Метод для гравитации ---
+    private void FindNearestPlayer()
+    {
+        float minDistance = float.MaxValue;
+        Transform closest = null;
+
+        foreach (NetworkConnection conn in ServerManager.Clients.Values)
+        {
+            if (conn.FirstObject != null)
+            {
+                float dist = Vector3.Distance(transform.position, conn.FirstObject.transform.position);
+                if (dist < chaseDistance && dist < minDistance)
+                {
+                    minDistance = dist;
+                    closest = conn.FirstObject.transform;
+                }
+            }
+        }
+        player = closest;
+    }
+
     private void ApplyGravity()
     {
         if (controller.isGrounded && _verticalVelocity < 0)
         {
-            _verticalVelocity = -2f; // Прижимаем к земле, чтобы isGrounded работал стабильно
+            _verticalVelocity = -2f;
         }
         else
         {
             _verticalVelocity += Physics.gravity.y * Time.deltaTime;
         }
 
-        // Применяем только вертикальное движение
         controller.Move(new Vector3(0, _verticalVelocity, 0) * Time.deltaTime);
     }
 
     public void MoveToPlayer()
     {
+        if (player == null) return;
         Vector3 dir = (player.position - transform.position).normalized;
-        MoveInDirection(dir); // Используем общий метод для единообразия
+        MoveInDirection(dir);
     }
 
     public void MoveInDirection(Vector3 dir)
     {
-        dir.y = 0; // Направление только по горизонтали
-
+        dir.y = 0;
         if (dir.magnitude > 0.1f)
         {
-            // Двигаемся
             controller.Move(dir * speed * Time.deltaTime);
-
-            // Поворачиваемся лицо в сторону бега (важно для бегства!)
             Quaternion targetRotation = Quaternion.LookRotation(dir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.deltaTime);
-
             animator.SetFloat("Speed", 0.5f);
         }
         else
@@ -128,14 +143,12 @@ public class EnemyAI : MonoBehaviour
 
     public void SmoothRotateToPlayer()
     {
+        if (player == null) return;
         Vector3 lookDir = player.position - transform.position;
         lookDir.y = 0;
         if (lookDir.magnitude > 0.1f)
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookDir), 5f * Time.deltaTime);
     }
-
-    // ... остальной код (атаки, магия) без изменений ...
-    public virtual void BossPerformAction() { if (enemyType == EnemyType.Ranged) LaunchMagic(); else ApplyMeleeDamage(); }
 
     public virtual void TryAttackLogic()
     {
@@ -143,26 +156,52 @@ public class EnemyAI : MonoBehaviour
         {
             _lastAttackTime = Time.time;
             string trigger = (enemyType == EnemyType.Melee) ? "AttackPh" : "AttackMa";
-            animator.SetTrigger(trigger);
-            if (enemyType == EnemyType.Melee) Invoke("ApplyMeleeDamage", 0.6f);
-            else Invoke("LaunchMagic", 0.6f);
+            PlayAttackAnimationObserversRpc(trigger);
+
+            if (enemyType == EnemyType.Melee)
+                Invoke(nameof(ApplyMeleeDamage), 0.6f);
+            else
+                Invoke(nameof(LaunchMagic), 0.6f);
         }
+    }
+
+    [ObserversRpc]
+    private void PlayAttackAnimationObserversRpc(string triggerName)
+    {
+        animator.SetTrigger(triggerName);
     }
 
     public virtual void ApplyMeleeDamage()
     {
-        if (player != null && Vector3.Distance(transform.position, player.position) <= attackDist + 1f)
+        if (!IsServer) return;
+
+        // ЗАЩИТА: Если игрок исчез за время замаха, ничего не делаем
+        if (player == null) return;
+
+        if (Vector3.Distance(transform.position, player.position) <= attackDist + 1.5f)
         {
-            if (player.TryGetComponent<IDamageable>(out var target)) target.TakeDamage(10, 0);
+            if (player.TryGetComponent<IDamageable>(out var target))
+                target.TakeDamage(10, 0);
         }
     }
 
     protected void LaunchMagic()
     {
+        if (!IsServer) return;
+
+        // ЗАЩИТА: Ошибка падала здесь, потому что player мог стать null
+        if (player == null) return;
+
         if (firePoint && magicPrefab)
         {
             Vector3 targetDir = (player.position + Vector3.up - firePoint.position).normalized;
-            Instantiate(magicPrefab, firePoint.position, Quaternion.LookRotation(targetDir));
+            GameObject ball = Instantiate(magicPrefab, firePoint.position, Quaternion.LookRotation(targetDir));
+
+            // Чтобы пуля знала, что её выпустил враг, а не игрок
+            ServerManager.Spawn(ball);
         }
     }
+
+    // --- ДОБАВЛЕНО ДЛЯ БОССА ---
+    public virtual void BossPerformAction() { }
 }
