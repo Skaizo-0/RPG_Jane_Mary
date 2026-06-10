@@ -6,8 +6,6 @@ using Unity.Services.Authentication;
 using FishNet;
 using FishNet.Transporting.UTP;
 using FishNet.Managing.Scened;
-
-// Библиотеки Relay
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
 
@@ -35,6 +33,22 @@ public class MainMenuController
         if (_view.startMatchButton != null)
             _view.startMatchButton.onClick.AddListener(StartGameNetworked);
 
+        InstanceFinder.SceneManager.OnLoadEnd += (args) => {
+            // Проверяем, что массив не пустой
+            if (args.LoadedScenes != null && args.LoadedScenes.Length > 0)
+            {
+                foreach (var scene in args.LoadedScenes)
+                {
+                    if (scene.name == "SampleScene")
+                    {
+                        Debug.Log("Игровая сцена загружена. Скрываю меню.");
+                        HideMenus();
+                        break;
+                    }
+                }
+            }
+        };
+
         StaticUpdateLoop.OnUpdate += UpdateLobbyUI;
     }
 
@@ -42,15 +56,13 @@ public class MainMenuController
     {
         try
         {
-            await UnityServices.InitializeAsync();
+            var options = new InitializationOptions();
+            await UnityServices.InitializeAsync(options);
             if (!AuthenticationService.Instance.IsSignedIn)
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
             Debug.Log("[RELAY] Сервисы Unity инициализированы.");
         }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[RELAY] Ошибка инициализации: {e.Message}");
-        }
+        catch (System.Exception e) { Debug.LogError($"[RELAY] Ошибка инициализации: {e.Message}"); }
     }
 
     private void OpenConnectionMenu()
@@ -65,12 +77,8 @@ public class MainMenuController
         {
             Allocation allocation = await RelayService.Instance.CreateAllocationAsync(4);
             _joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
-
-            // СРАЗУ ВЫВОДИМ КОД (чтобы он точно был)
-            if (_view.hostCodeDisplay != null)
-                _view.hostCodeDisplay.text = $"КОД: {_joinCode}";
-
-            Debug.Log($"[RELAY] КОД КОМНАТЫ: {_joinCode}");
+            if (_view.hostCodeDisplay != null) _view.hostCodeDisplay.text = $"КОД: {_joinCode}";
+            Debug.LogError("МОЙ КОД ТУТ: " + _joinCode);
 
             if (InstanceFinder.TransportManager.Transport is UnityTransport transport)
             {
@@ -84,21 +92,26 @@ public class MainMenuController
             _view.connectionPanel.SetActive(false);
             _view.lobbyPanel.SetActive(true);
             if (_view.startMatchButton != null) _view.startMatchButton.gameObject.SetActive(true);
-
         }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[RELAY] Ошибка Хоста: {e.Message}");
-        }
+        catch (System.Exception e) { Debug.LogError($"[RELAY] Ошибка Хоста: {e.Message}"); }
     }
 
     private async Task JoinClientWithRelay()
     {
-        string inputCode = _view.joinCodeInputField.text;
-        if (string.IsNullOrEmpty(inputCode)) return;
+        // Очищаем введенный текст от пробелов и переводим в верхний регистр
+        string inputCode = _view.joinCodeInputField.text.Trim().ToUpper();
+
+        // Код Relay всегда состоит из 6 символов. Проверяем это.
+        if (string.IsNullOrEmpty(inputCode) || inputCode.Length != 6)
+        {
+            Debug.LogError($"[RELAY] Неверный формат кода: '{inputCode}'. Код должен состоять из 6 символов.");
+            return;
+        }
 
         try
         {
+            Debug.Log($"[RELAY] Попытка подключения с кодом: {inputCode}");
+
             JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(inputCode);
 
             if (InstanceFinder.TransportManager.Transport is UnityTransport transport)
@@ -111,12 +124,10 @@ public class MainMenuController
 
             _view.connectionPanel.SetActive(false);
             _view.lobbyPanel.SetActive(true);
-            if (_view.startMatchButton != null) _view.startMatchButton.gameObject.SetActive(false);
-
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"[RELAY] Ошибка Клиента: {e.Message}");
+            Debug.LogError($"[RELAY] Ошибка Клиента (код {inputCode}): {e.Message}");
         }
     }
 
@@ -125,10 +136,7 @@ public class MainMenuController
         if (_view.lobbyPanel != null && _view.lobbyPanel.activeSelf)
         {
             int count = 0;
-            // На стороне Хоста считаем через ServerManager
             if (InstanceFinder.IsServerStarted) count = InstanceFinder.ServerManager.Clients.Count;
-            // На стороне Клиента FishNet не дает список до загрузки сцены, 
-            // поэтому просто пишем "В лобби", пока хост не нажмет старт
 
             if (_view.playerCountText != null)
             {
@@ -143,11 +151,20 @@ public class MainMenuController
     private void StartGameNetworked()
     {
         if (!InstanceFinder.IsServerStarted) return;
-        Debug.Log("[SERVER] Запуск сетевой загрузки...");
-
-        // ИСПРАВЛЕНИЕ: Замени "SampleScene" на точное имя своей сцены!
         SceneLoadData sld = new SceneLoadData("SampleScene");
         InstanceFinder.SceneManager.LoadGlobalScenes(sld);
+        // HideMenus(); // УДАЛИ ОТСЮДА. Оно вызовется само через OnClientLoadedStartScenes
+    }
+
+    private void HideMenus()
+    {
+        _view.lobbyPanel.SetActive(false);
+        _view.mainButtonsPanel.SetActive(false);
+        _view.connectionPanel.SetActive(false);
+
+        // Разблокируем камеру
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private void OpenSettings() { _view.settingsWindow.SetActive(true); _view.mainButtonsPanel.SetActive(false); }
