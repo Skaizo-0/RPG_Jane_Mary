@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Unity.Cinemachine; // ДОБАВИЛИ ЭТУ СТРОЧКУ (Или "using Cinemachine;")
-
+using Unity.Cinemachine; // Для новой Cinemachine (v3)
+using System.Collections;
 
 public class Bootstrapper : MonoBehaviour
 {
@@ -26,25 +26,30 @@ public class Bootstrapper : MonoBehaviour
 
     void Awake()
     {
-        Instance = this;
+        // КРИТИЧЕСКИЙ ФИКС: Бутстраппер должен выжить при смене сцены!
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
 
         var repo = new GameRepository();
         _interactor = new GameInteractor(repo);
         _input = new StandaloneInput();
 
-        // Мы не инициализируем HUD тут, так как игрока еще нет.
-        // Это сделает метод RegisterPlayer позже.
-
-        //  CloseAllMenus();
-        Cursor.lockState = CursorLockMode.None; // Мышка свободна
-        Cursor.visible = true;                  // Мышку видно
-        pausePanel.SetActive(false);
-        gameMenuPanel.SetActive(false);
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        if (pausePanel) pausePanel.SetActive(false);
+        if (gameMenuPanel) gameMenuPanel.SetActive(false);
     }
 
     void Update()
     {
-        // Если игрока еще нет или HUD не создан — не обновляем
         if (_hudController == null || _input == null) return;
 
         _hudController.UpdateHud();
@@ -57,57 +62,60 @@ public class Bootstrapper : MonoBehaviour
 
     public void RegisterPlayer(PlayerMovement move, PlayerCombat combat, Health health)
     {
+        // Привязываем локального игрока к бутстрапперу
         playerMove = move;
         playerCombat = combat;
         playerHealth = health;
 
-        // Передаем ввод заспавненному игроку
-        playerMove.Construct(_input);
-        if (playerCombat != null) playerCombat.Construct(_input);
-
         // Инициализируем контроллер интерфейса для этого игрока
         _hudController = new HUD_Controller(uiHudView, playerHealth, playerCombat);
 
-        Debug.Log("Сетевой игрок успешно зарегистрирован!");
+        Debug.Log($"[BOOTSTRAPPER] Игрок {move.name} успешно зарегистрирован!");
 
-        // ПРИВЯЗКА КАМЕРЫ (Универсальный способ для новой и старой Cinemachine)
+        // Запускаем поиск камеры
+        StartCoroutine(SetupCameraWithRetry(move.transform));
+    }
 
-        // 1. Пытаемся найти новую Cinemachine Camera (v3)
-        var v3Cam = Object.FindFirstObjectByType<CinemachineCamera>();
-        if (v3Cam != null)
+    private IEnumerator SetupCameraWithRetry(Transform target)
+    {
+        int attempts = 0;
+        while (attempts < 30)
         {
-            v3Cam.Follow = move.transform;
-            v3Cam.LookAt = move.transform;
-            Debug.Log("Новая Cinemachine Camera (v3) привязана!");
-            return; // Выходим, если нашли
-        }
+            var v3Cam = Object.FindAnyObjectByType<CinemachineCamera>();
+            if (v3Cam != null)
+            {
+                v3Cam.Follow = target;
+                v3Cam.LookAt = target;
+                Debug.Log($"[CAMERA] Новая Cinemachine Camera привязана!");
+                yield break;
+            }
 
-        // 2. Если не нашли, ищем старый FreeLook (v2)
-        var freeLook = Object.FindFirstObjectByType<CinemachineFreeLook>();
-        if (freeLook != null)
-        {
-            freeLook.Follow = move.transform;
-            freeLook.LookAt = move.transform;
-            Debug.Log("Старая Cinemachine FreeLook (v2) привязана!");
+            var freeLook = Object.FindAnyObjectByType<CinemachineFreeLook>();
+            if (freeLook != null)
+            {
+                freeLook.Follow = target;
+                freeLook.LookAt = target;
+                Debug.Log($"[CAMERA] Старая Cinemachine FreeLook привязана!");
+                yield break;
+            }
+
+            attempts++;
+            yield return new WaitForSeconds(0.1f);
         }
-        else
-        {
-            Debug.LogWarning("Критическая ошибка: На сцене не найдено ни одной Cinemachine камеры!");
-        }
+        Debug.LogError("[CAMERA] ОШИБКА: Камера не найдена!");
     }
 
     public void TogglePause()
     {
-        if (gameMenuPanel.activeSelf)
+        if (gameMenuPanel != null && gameMenuPanel.activeSelf)
         {
             gameMenuPanel.SetActive(false);
             pausePanel.SetActive(true);
         }
-        else
+        else if (pausePanel != null)
         {
             bool isPaused = !pausePanel.activeSelf;
             pausePanel.SetActive(isPaused);
-
             Time.timeScale = isPaused ? 0f : 1f;
             Cursor.lockState = isPaused ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = isPaused;
@@ -116,14 +124,14 @@ public class Bootstrapper : MonoBehaviour
 
     public void OpenGameMenu()
     {
-        pausePanel.SetActive(false);
-        gameMenuPanel.SetActive(true);
+        if (pausePanel) pausePanel.SetActive(false);
+        if (gameMenuPanel) gameMenuPanel.SetActive(true);
     }
 
     public void CloseAllMenus()
     {
-        pausePanel.SetActive(false);
-        gameMenuPanel.SetActive(false);
+        if (pausePanel) pausePanel.SetActive(false);
+        if (gameMenuPanel) gameMenuPanel.SetActive(false);
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -132,57 +140,17 @@ public class Bootstrapper : MonoBehaviour
     public void SaveGame()
     {
         if (playerHealth == null) return;
-
-        PlayerData data = new PlayerData
-        {
-            Hp = playerHealth.CurrentHealth,
-            MaxHp = playerHealth.MaxHealth,
-            Position = playerMove.transform.position
-        };
-
-        EnemyAI[] allEnemies = FindObjectsOfType<EnemyAI>();
-        foreach (var enemy in allEnemies)
-        {
-            Health h = enemy.GetComponent<Health>();
-            if (h != null && h.CurrentHealth > 0)
-            {
-                data.Enemies.Add(new EnemySaveData
-                {
-                    Type = enemy.enemyType.ToString(),
-                    Position = enemy.transform.position,
-                    CurrentHp = h.CurrentHealth
-                });
-            }
-        }
-
+        PlayerData data = new PlayerData { Hp = playerHealth.CurrentHealth, MaxHp = playerHealth.MaxHealth, Position = playerMove.transform.position };
         _interactor.SaveGame(data);
     }
 
     public void LoadGame()
     {
         if (playerHealth == null) return;
-
         _interactor.LoadGame();
         PlayerData data = _interactor.Data;
-
         playerHealth.SetHealth(data.Hp);
         playerMove.Teleport(data.Position);
-
-        EnemyAI[] currentEnemies = FindObjectsOfType<EnemyAI>();
-        for (int i = 0; i < currentEnemies.Length; i++)
-        {
-            if (i < data.Enemies.Count)
-            {
-                currentEnemies[i].transform.position = data.Enemies[i].Position;
-                Health h = currentEnemies[i].GetComponent<Health>();
-                if (h != null) h.SetHealth(data.Enemies[i].CurrentHp);
-                currentEnemies[i].gameObject.SetActive(true);
-            }
-            else
-            {
-                currentEnemies[i].gameObject.SetActive(false);
-            }
-        }
         CloseAllMenus();
     }
 

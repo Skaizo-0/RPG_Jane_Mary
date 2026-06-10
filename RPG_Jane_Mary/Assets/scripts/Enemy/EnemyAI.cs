@@ -1,8 +1,10 @@
 using UnityEngine;
 using FishNet.Object;
 using FishNet.Connection;
+using System.Collections;
 using System.Collections.Generic;
 
+// Перечисление типов врагов (сохранено полностью)
 public enum EnemyType { Melee, Ranged }
 
 public class EnemyAI : NetworkBehaviour
@@ -22,6 +24,7 @@ public class EnemyAI : NetworkBehaviour
     public GameObject magicPrefab;
     public Transform firePoint;
 
+    // Ссылки на машину состояний (сохранено полностью)
     public EnemyStateMachine StateMachine { get; private set; }
     public IdleState IdleState { get; private set; }
     public AggroState AggroState { get; private set; }
@@ -49,7 +52,9 @@ public class EnemyAI : NetworkBehaviour
     public override void OnStartServer()
     {
         base.OnStartServer();
-
+        Debug.Log(
+        $"ENEMY SERVER START {gameObject.name}"
+    );
         if (enemyType == EnemyType.Ranged) attackDist = 8f;
 
         Health.OnHealthChanged += (cur, max) =>
@@ -61,10 +66,22 @@ public class EnemyAI : NetworkBehaviour
         };
 
         StateMachine.Initialize(IdleState);
+
+        Debug.Log($"[SERVER] Моб {gameObject.name} инициализирован.");
+    }
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        if (!IsServer)
+        {
+            Debug.Log($"[CLIENT] Моб {gameObject.name} (ID: {ObjectId}) ПОЯВИЛСЯ на экране клиента!");
+        }
     }
 
     protected virtual void Update()
     {
+        // Только сервер управляет логикой
         if (!IsServer) return;
 
         if (Health.CurrentHealth <= 0)
@@ -84,16 +101,20 @@ public class EnemyAI : NetworkBehaviour
         float minDistance = float.MaxValue;
         Transform closest = null;
 
-        foreach (NetworkConnection conn in ServerManager.Clients.Values)
+        // Ищем всех игроков со скриптом PlayerMovement (самый надежный способ для FishNet)
+        PlayerMovement[] allPlayers = Object.FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None);
+
+        foreach (PlayerMovement p in allPlayers)
         {
-            if (conn.FirstObject != null)
+            Health h = p.GetComponent<Health>();
+            if (h != null && h.CurrentHealth <= 0) continue;
+
+            float dist = Vector3.Distance(transform.position, p.transform.position);
+
+            if (dist < chaseDistance && dist < minDistance)
             {
-                float dist = Vector3.Distance(transform.position, conn.FirstObject.transform.position);
-                if (dist < chaseDistance && dist < minDistance)
-                {
-                    minDistance = dist;
-                    closest = conn.FirstObject.transform;
-                }
+                minDistance = dist;
+                closest = p.transform;
             }
         }
         player = closest;
@@ -101,16 +122,13 @@ public class EnemyAI : NetworkBehaviour
 
     private void ApplyGravity()
     {
-        if (controller.isGrounded && _verticalVelocity < 0)
-        {
-            _verticalVelocity = -2f;
-        }
-        else
-        {
-            _verticalVelocity += Physics.gravity.y * Time.deltaTime;
-        }
+        if (controller == null) return;
 
-        controller.Move(new Vector3(0, _verticalVelocity, 0) * Time.deltaTime);
+        if (controller.isGrounded && _verticalVelocity < 0) _verticalVelocity = -2f;
+        else _verticalVelocity += Physics.gravity.y * Time.deltaTime;
+
+        if (controller.enabled)
+            controller.Move(new Vector3(0, _verticalVelocity, 0) * Time.deltaTime);
     }
 
     public void MoveToPlayer()
@@ -125,20 +143,19 @@ public class EnemyAI : NetworkBehaviour
         dir.y = 0;
         if (dir.magnitude > 0.1f)
         {
-            controller.Move(dir * speed * Time.deltaTime);
+            if (controller.enabled)
+                controller.Move(dir * speed * Time.deltaTime);
+
             Quaternion targetRotation = Quaternion.LookRotation(dir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.deltaTime);
             animator.SetFloat("Speed", 0.5f);
         }
-        else
-        {
-            StopMoving();
-        }
+        else StopMoving();
     }
 
     public void StopMoving()
     {
-        animator.SetFloat("Speed", 0);
+        if (animator != null) animator.SetFloat("Speed", 0);
     }
 
     public void SmoothRotateToPlayer()
@@ -152,31 +169,29 @@ public class EnemyAI : NetworkBehaviour
 
     public virtual void TryAttackLogic()
     {
+        if (player == null) return;
         if (Time.time > _lastAttackTime + _attackCooldown)
         {
             _lastAttackTime = Time.time;
             string trigger = (enemyType == EnemyType.Melee) ? "AttackPh" : "AttackMa";
+
             PlayAttackAnimationObserversRpc(trigger);
 
-            if (enemyType == EnemyType.Melee)
-                Invoke(nameof(ApplyMeleeDamage), 0.6f);
-            else
-                Invoke(nameof(LaunchMagic), 0.6f);
+            if (enemyType == EnemyType.Melee) StartCoroutine(DelayedMeleeDamage(0.6f));
+            else StartCoroutine(DelayedMagicShot(0.6f));
         }
     }
 
     [ObserversRpc]
     private void PlayAttackAnimationObserversRpc(string triggerName)
     {
-        animator.SetTrigger(triggerName);
+        if (animator != null) animator.SetTrigger(triggerName);
     }
 
-    public virtual void ApplyMeleeDamage()
+    private IEnumerator DelayedMeleeDamage(float delay)
     {
-        if (!IsServer) return;
-
-        // ЗАЩИТА: Если игрок исчез за время замаха, ничего не делаем
-        if (player == null) return;
+        yield return new WaitForSeconds(delay);
+        if (!IsServer || player == null) yield break;
 
         if (Vector3.Distance(transform.position, player.position) <= attackDist + 1.5f)
         {
@@ -185,23 +200,16 @@ public class EnemyAI : NetworkBehaviour
         }
     }
 
-    protected void LaunchMagic()
+    private IEnumerator DelayedMagicShot(float delay)
     {
-        if (!IsServer) return;
+        yield return new WaitForSeconds(delay);
+        if (!IsServer || player == null || firePoint == null) yield break;
 
-        // ЗАЩИТА: Ошибка падала здесь, потому что player мог стать null
-        if (player == null) return;
+        Vector3 targetDir = (player.position + Vector3.up - firePoint.position).normalized;
+        GameObject ball = Instantiate(magicPrefab, firePoint.position, Quaternion.LookRotation(targetDir));
 
-        if (firePoint && magicPrefab)
-        {
-            Vector3 targetDir = (player.position + Vector3.up - firePoint.position).normalized;
-            GameObject ball = Instantiate(magicPrefab, firePoint.position, Quaternion.LookRotation(targetDir));
-
-            // Чтобы пуля знала, что её выпустил враг, а не игрок
-            ServerManager.Spawn(ball);
-        }
+        ServerManager.Spawn(ball);
     }
 
-    // --- ДОБАВЛЕНО ДЛЯ БОССА ---
     public virtual void BossPerformAction() { }
 }

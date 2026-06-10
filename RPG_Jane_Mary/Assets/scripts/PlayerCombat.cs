@@ -1,7 +1,7 @@
 using UnityEngine;
-using FishNet.Object; // Обязательно для сети
+using FishNet.Object;
 
-public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBehaviour
+public class PlayerCombat : NetworkBehaviour
 {
     public Animator animator;
     public Transform firePoint;
@@ -33,15 +33,18 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
 
     void Update()
     {
-        // Только владелец персонажа может нажимать на кнопки атаки
-        if (!IsOwner || _input == null) return;
+        if (!IsOwner) return;
+
+        // ФИКС: Если ввод пустой (напр. после смены сцены) - создаем его сами
+        if (_input == null)
+        {
+            _input = new StandaloneInput();
+            Debug.Log("[COMBAT] Ввод переназначен автоматически.");
+        }
 
         if (_input.AttackPhys)
         {
-            // 1. Поворачиваемся локально (для мгновенного отклика)
             RotateToCamera(physRotationOffset);
-
-            // 2. Просим сервер выполнить атаку
             ProcessPhysicalAttackServerRpc();
         }
 
@@ -49,15 +52,14 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
         {
             _lastMagicTime = Time.time;
             RotateToCamera(magicRotationOffset);
-
-            // Просим сервер заспавнить магию
             ProcessMagicAttackServerRpc();
         }
     }
 
     private void RotateToCamera(float offset)
     {
-        if (_cam == null) _cam = Camera.main.transform;
+        if (_cam == null && Camera.main != null) _cam = Camera.main.transform;
+        if (_cam == null) return;
 
         Vector3 camForward = _cam.forward;
         camForward.y = 0;
@@ -69,53 +71,38 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
         }
     }
 
-    // --- СЕТЕВАЯ ЛОГИКА ---
-
-    [ServerRpc] // Выполняется на сервере
+    [ServerRpc]
     private void ProcessPhysicalAttackServerRpc()
     {
-        // Сервер говорит всем клиентам запустить анимацию
         PlayAttackAnimationObserversRpc("AttackPhys");
-
-        // Сервер сам вызывает расчет урона (потому что только серверу доверяем HP)
         DealPhysDamage();
     }
 
-    [ServerRpc] // Выполняется на сервере
+    [ServerRpc]
     private void ProcessMagicAttackServerRpc()
     {
-        // Сервер говорит всем клиентам запустить анимацию
         PlayAttackAnimationObserversRpc("AttackMag");
-
-        // Магия заспавнится через Animation Event (метод ShootMagic)
-        // Но в сетевой игре ShootMagic тоже должен быть серверным.
     }
 
-    [ObserversRpc] // Выполняется у всех игроков на экране
+    [ObserversRpc]
     private void PlayAttackAnimationObserversRpc(string triggerName)
     {
         if (animator != null) animator.SetTrigger(triggerName);
     }
 
-    // Этот метод вызывается анимацией (Animation Event)
     public void ShootMagic()
     {
-        // Только сервер имеет право создавать сетевые объекты
         if (!IsServer) return;
 
         if (magicPrefab != null && firePoint != null)
         {
             GameObject ball = Instantiate(magicPrefab, firePoint.position, firePoint.rotation);
-
-            // ОЧЕНЬ ВАЖНО: В FishNet нужно "заспавнить" объект в сети, чтобы все его увидели
             ServerManager.Spawn(ball, Owner);
         }
     }
 
-    // Этот метод вызывается анимацией или из RPC
     public void DealPhysDamage()
     {
-        // Только сервер обсчитывает урон
         if (!IsServer) return;
 
         Vector3 pos = transform.position + transform.forward * 1.5f + Vector3.up;
@@ -123,9 +110,11 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
 
         foreach (var enemy in enemies)
         {
-            if (enemy.TryGetComponent<IDamageable>(out var target))
+            // Ищем здоровье в родителях (ОБЯЗАТЕЛЬНО для мобов)
+            Health targetHealth = enemy.GetComponentInParent<Health>();
+            if (targetHealth != null)
             {
-                target.TakeDamage(physDamage, 0);
+                targetHealth.TakeDamage(physDamage, 0);
             }
         }
     }

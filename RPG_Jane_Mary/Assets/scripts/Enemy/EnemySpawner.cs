@@ -1,81 +1,144 @@
 using UnityEngine;
-using FishNet.Object; // Добавили
+using FishNet; // ДОБАВЛЕНО: Теперь InstanceFinder будет работать
+using FishNet.Object;
+using FishNet.Object.Synchronizing;
 
-public class EnemySpawner : NetworkBehaviour // Изменили на NetworkBehaviour
+public class EnemySpawner : NetworkBehaviour
 {
-    [Header("Настройки спавна")]
-    public GameObject[] enemyPrefabs;
-    public float spawnInterval = 5f;
-    public float spawnRadius = 10f;
+    [Header("Точки спавна")]
+    [Tooltip("Перетащите сюда пустышки из иерархии")]
+    public Transform[] spawnPoints;
 
-    [Header("Доп. балл: Редкие мобы")]
-    [Range(0, 100)]
+    [Header("Настройки префабов")]
+    public GameObject[] enemyPrefabs;
+
+    [Header("Редкие мобы")]
+    [Range(0f, 100f)]
     public float rareMobChance = 10f;
     public float rareMobStatMultiplier = 2f;
 
-    private float _nextSpawnTime;
+    // Флаг, чтобы не заспавнить дважды
+    private bool _hasSpawned = false;
 
-    void Update()
+    public override void OnStartServer()
     {
-        // КЛЮЧЕВОЕ: Только сервер решает, когда и где спавнить врага
-        if (!IsServer) return;
+        base.OnStartServer();
 
-        if (Time.time >= _nextSpawnTime)
+        // Запускаем спавн только один раз при старте сервера
+        if (!_hasSpawned)
         {
-            SpawnEnemy();
-            _nextSpawnTime = Time.time + spawnInterval;
+            SpawnAllEnemies();
+            _hasSpawned = true;
         }
     }
 
-    void SpawnEnemy()
+    private void SpawnAllEnemies()
     {
-        if (enemyPrefabs.Length == 0) return;
+        if (spawnPoints == null || spawnPoints.Length == 0)
+        {
+            Debug.LogWarning("[SERVER] EnemySpawner: Точки спавна не назначены!");
+            return;
+        }
 
-        Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
-        Vector3 spawnPos = transform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
+        if (enemyPrefabs == null || enemyPrefabs.Length == 0)
+        {
+            Debug.LogWarning("[SERVER] EnemySpawner: Список префабов пуст!");
+            return;
+        }
 
+        Debug.Log($"[SERVER] Начинаю спавн {spawnPoints.Length} врагов...");
+
+        // Проходим по каждой точке из массива
+        foreach (Transform point in spawnPoints)
+        {
+            if (point == null) continue;
+
+            SpawnSingleEnemy(point.position, point.rotation);
+        }
+    }
+
+    private void SpawnSingleEnemy(Vector3 position, Quaternion rotation)
+    {
+        // Выбираем случайный префаб
         int randomIndex = Random.Range(0, enemyPrefabs.Length);
-        GameObject newEnemy = Instantiate(enemyPrefabs[randomIndex], spawnPos, Quaternion.identity);
+        GameObject prefab = enemyPrefabs[randomIndex];
 
-        // КЛЮЧЕВОЕ: Сначала спавним в сети
-        ServerManager.Spawn(newEnemy);
+        if (prefab == null) return;
 
-        // Логика редкого моба
-        if (Random.Range(0f, 100f) <= rareMobChance)
+        // Создаем объект
+        GameObject enemy = Instantiate(prefab, position, rotation);
+
+        // Проверяем наличие NetworkObject
+        NetworkObject nob = enemy.GetComponent<NetworkObject>();
+        if (nob == null)
         {
-            MakeRare(newEnemy);
+            Debug.LogError($"[SERVER] На префабе {prefab.name} нет NetworkObject!");
+            Destroy(enemy);
+            return;
+        }
+
+        // Твои отладочные логи теперь будут работать
+        Debug.Log($"SPAWN {prefab.name}");
+        Debug.Log($"Prefab ID: {nob.PrefabId}");
+
+        // Проверка: зарегистрирован ли префаб в NetworkManager
+        bool isRegistered = InstanceFinder.NetworkManager.SpawnablePrefabs.GetObject(true, nob.PrefabId) != null;
+        Debug.Log($"Is Prefab Registered: {isRegistered}");
+
+        // Регистрируем в сети FishNet
+        ServerManager.Spawn(enemy);
+
+        // Логика редкости
+        bool makeRare = Random.Range(0f, 100f) <= rareMobChance;
+        if (makeRare)
+        {
+            MakeRare(enemy);
         }
     }
 
-    void MakeRare(GameObject enemy)
+    private void MakeRare(GameObject enemy)
     {
-        // На сервере меняем статы
+        if (enemy == null) return;
+
         Health hp = enemy.GetComponent<Health>();
         if (hp != null)
         {
-            float boostedHp = hp.maxHp * rareMobStatMultiplier;
-            hp.SetHealth(boostedHp);
+            float newHp = hp.maxHp * rareMobStatMultiplier;
+            hp.SetHealth(newHp);
         }
 
-        // Рассылаем всем визуальные изменения (цвет и масштаб)
         SetRareVisualsObserversRpc(enemy);
     }
 
-    [ObserversRpc]
+    [ObserversRpc(BufferLast = true)]
     private void SetRareVisualsObserversRpc(GameObject enemy)
     {
         if (enemy == null) return;
 
-        enemy.name += " (RARE)";
+        if (!enemy.name.Contains("(RARE)"))
+            enemy.name += " (RARE)";
+
         enemy.transform.localScale *= 1.5f;
 
         Renderer rend = enemy.GetComponentInChildren<Renderer>();
-        if (rend != null) rend.material.color = Color.yellow;
+        if (rend != null)
+        {
+            rend.material.color = Color.yellow;
+        }
     }
 
-    private void OnDrawGizmosSelected()
+    private void OnDrawGizmos()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, spawnRadius);
+        if (spawnPoints == null) return;
+
+        Gizmos.color = Color.red;
+        foreach (var point in spawnPoints)
+        {
+            if (point != null)
+            {
+                Gizmos.DrawSphere(point.position, 0.5f);
+                Gizmos.DrawRay(point.position, point.forward * 1.5f);
+            }
+        }
     }
 }

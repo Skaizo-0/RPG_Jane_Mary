@@ -1,45 +1,38 @@
 using UnityEngine;
-using FishNet.Object; // Нужно для IsClient/IsOwner
 
 public class UI_GameOver : MonoBehaviour
 {
     public GameObject gameOverPanel;
+    public GameObject victoryPanel;
 
-    private void OnEnable() => Health.OnPlayerDeath += ShowGameOverScreen;
-    private void OnDisable() => Health.OnPlayerDeath -= ShowGameOverScreen;
+    private void Start()
+    {
+        gameOverPanel.SetActive(false);
+        victoryPanel.SetActive(false);
+    }
 
-    private void ShowGameOverScreen()
+    public void ShowDefeat()
     {
         gameOverPanel.SetActive(true);
-        // В мультиплеере Time.timeScale = 0 может сломать сеть! 
-        // Лучше просто выключить ввод игрока.
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
 
-    public void RestartGame()
+    public void ShowVictory()
     {
-        // Находим нашего локального игрока
-        Health localHealth = null;
-        foreach (var h in FindObjectsOfType<Health>())
-        {
-            if (h.IsOwner && h.CompareTag("Player"))
-            {
-                localHealth = h;
-                break;
-            }
-        }
+        victoryPanel.SetActive(true);
 
-        if (localHealth != null)
-        {
-            // Просим сервер нас возродить
-            localHealth.RequestRespawnServerRpc();
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
 
-            // Прячем меню
-            gameOverPanel.SetActive(false);
-            Time.timeScale = 1f; // Если вы его меняли
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
+    public void HideAll()
+    {
+        gameOverPanel.SetActive(false);
+        victoryPanel.SetActive(false);
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 }

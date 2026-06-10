@@ -641,7 +641,7 @@ GameObject:
   - component: {fileID: 6328922729411616298}
   - component: {fileID: 3520756351910858408}
   - component: {fileID: 7039298059562243736}
-  - component: {fileID: 4577313200249991487}
+  - component: {fileID: -7845125569756904207}
   m_Layer: 3
   m_Name: PolyArtWizardMesh
   m_TagString: Enemy
@@ -680,7 +680,7 @@ Animator:
   m_Controller: {fileID: 9100000, guid: 0403e885737d65f4aa83615ed752a225, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
-  m_ApplyRootMotion: 1
+  m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
@@ -727,8 +727,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _componentIndexCache: 0
-  _addedNetworkObject: {fileID: 4577313200249991487}
-  _networkObjectCache: {fileID: 0}
+  _addedNetworkObject: {fileID: -7845125569756904207}
+  _networkObjectCache: {fileID: -7845125569756904207}
   maxHp: 100
   animator: {fileID: 5001679094059776349}
 --- !u!114 &7039298059562243736
@@ -743,6 +743,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 545c525f6e05d06439129ef4aa881c09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 1
+  _addedNetworkObject: {fileID: -7845125569756904207}
+  _networkObjectCache: {fileID: -7845125569756904207}
   enemyType: 1
   player: {fileID: 0}
   animator: {fileID: 5001679094059776349}
@@ -753,7 +756,7 @@ MonoBehaviour:
   isPeaceful: 1
   magicPrefab: {fileID: 1923774466051800111, guid: 558aa8c7e9daf9144bc897cee71babd6, type: 3}
   firePoint: {fileID: 406548988074259775}
---- !u!114 &4577313200249991487
+--- !u!114 &-7845125569756904207
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -783,22 +786,24 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 65535
+  <PrefabId>k__BackingField: 14
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 12155412917109158746
   SceneId: 0
   SerializedTransformProperties:
-    Position: {x: 0, y: 0, z: 0}
-    Rotation: {x: 0, y: 0, z: 0, w: 0}
-    Scale: {x: 0, y: 0, z: 0}
-    IsValid: 0
+    Position: {x: -2.2495563, y: -1.77, z: -11.49}
+    Rotation: {x: 0, y: 0, z: 0, w: 1}
+    Scale: {x: 1, y: 1, z: 1}
+    IsValid: 1
   <IsNested>k__BackingField: 0
   WasActiveDuringEdit: 0
   WasActiveDuringEdit_Set1: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
-  NetworkBehaviours: []
+  NetworkBehaviours:
+  - {fileID: 3520756351910858408}
+  - {fileID: 7039298059562243736}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -809,7 +814,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: 0
+  _initializedTimestamp: -8584204776821555434
 --- !u!1 &1836763385683812054
 GameObject:
   m_ObjectHideFlags: 0

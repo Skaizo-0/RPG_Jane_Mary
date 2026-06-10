@@ -48,6 +48,9 @@ public class ScoreController : MonoBehaviour
         if (_killCount == 3)
         {
             PlayVictory();
+
+            if (MatchManager.Instance != null)
+                MatchManager.Instance.HandleVictory();
         }
     }
 
