@@ -19,32 +19,41 @@ public class PlayerMovement : NetworkBehaviour
         _cam = Camera.main.transform;
     }
 
-    // Объединенный метод OnStartClient (только ОДИН раз)
-    public override void OnStartClient()
+    // ИСПОЛЬЗУЕМ OnStartNetwork для настройки физики
+    public override void OnStartNetwork()
     {
-        base.OnStartClient();
+        base.OnStartNetwork();
 
-        if (IsOwner)
+        if (controller == null) controller = GetComponent<CharacterController>();
+
+        // ИСПРАВЛЕНИЕ ОШИБКИ FN0007:
+        // Вместо IsOwner используем Owner.IsLocalClient
+        // Контроллер должен быть ВКЛЮЧЕН, если это наш игрок ИЛИ если это Сервер.
+        if (Owner.IsLocalClient || IsServer)
         {
-            _cam = Camera.main.transform;
-            _gravityVelocity = 0;
-            // Регистрируем себя в Бутстраппере, когда появились в сети
-            if (Bootstrapper.Instance != null)
-            {
-                var combat = GetComponent<PlayerCombat>();
-                var health = GetComponent<Health>();
-                Bootstrapper.Instance.RegisterPlayer(this, combat, health);
-            }
+            controller.enabled = true;
         }
         else
         {
-            // Чужим игрокам выключаем контроллер
-            if (controller != null) controller.enabled = false;
+            // Выключаем только на клиентах-зрителях (чужие игроки в твоем окне)
+            controller.enabled = false;
+        }
+
+        // Регистрируем себя в Бутстраппере
+        if (Owner.IsLocalClient && Bootstrapper.Instance != null)
+        {
+            _cam = Camera.main.transform;
+            _gravityVelocity = 0;
+
+            var combat = GetComponent<PlayerCombat>();
+            var health = GetComponent<Health>();
+            Bootstrapper.Instance.RegisterPlayer(this, combat, health);
         }
     }
 
     void Update()
     {
+        // В Update использовать IsOwner можно!
         if (!IsOwner || _input == null) return;
 
         Vector3 inputDir = _input.MoveAxis;
@@ -73,6 +82,9 @@ public class PlayerMovement : NetworkBehaviour
 
     private void ApplyGravity()
     {
+        // Применяем гравитацию только если контроллер включен
+        if (controller == null || !controller.enabled) return;
+
         if (controller.isGrounded) _gravityVelocity = -2f;
         else _gravityVelocity += -9.81f * Time.deltaTime;
 
@@ -83,13 +95,13 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (IsOwner)
         {
-            controller.enabled = false; // Выключаем контроллер
-            _gravityVelocity = 0;       // Сбрасываем гравитацию!
+            controller.enabled = false;
+            _gravityVelocity = 0;
             transform.position = pos;
 
-            Physics.SyncTransforms();   // ЗАСТАВЛЯЕМ физику увидеть новую позицию пола
+            Physics.SyncTransforms();
 
-            controller.enabled = true;  // Включаем обратно
+            controller.enabled = true;
         }
     }
 }

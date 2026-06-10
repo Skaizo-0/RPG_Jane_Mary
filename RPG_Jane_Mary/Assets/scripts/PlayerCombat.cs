@@ -1,7 +1,7 @@
 using UnityEngine;
 using FishNet.Object; // Обязательно для сети
 
-public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBehaviour
+public class PlayerCombat : NetworkBehaviour
 {
     public Animator animator;
     public Transform firePoint;
@@ -23,6 +23,9 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
     private IInputService _input;
     private Transform _cam;
 
+    // Переменная для хранения направления выстрела на сервере
+    private Vector3 _serverShootDirection;
+
     public float MagicReadyProgress => Mathf.Clamp01((Time.time - _lastMagicTime) / magicCooldown);
 
     public void Construct(IInputService input)
@@ -38,10 +41,7 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
 
         if (_input.AttackPhys)
         {
-            // 1. Поворачиваемся локально (для мгновенного отклика)
             RotateToCamera(physRotationOffset);
-
-            // 2. Просим сервер выполнить атаку
             ProcessPhysicalAttackServerRpc();
         }
 
@@ -50,8 +50,9 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
             _lastMagicTime = Time.time;
             RotateToCamera(magicRotationOffset);
 
-            // Просим сервер заспавнить магию
-            ProcessMagicAttackServerRpc();
+            // КРИТИЧЕСКИЙ ФИКС: Берем направление нашей камеры и шлем его серверу
+            Vector3 lookDirection = _cam.forward;
+            ProcessMagicAttackServerRpc(lookDirection);
         }
     }
 
@@ -71,27 +72,30 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
 
     // --- СЕТЕВАЯ ЛОГИКА ---
 
-    [ServerRpc] // Выполняется на сервере
+    [ServerRpc]
     private void ProcessPhysicalAttackServerRpc()
     {
-        // Сервер говорит всем клиентам запустить анимацию
         PlayAttackAnimationObserversRpc("AttackPhys");
-
-        // Сервер сам вызывает расчет урона (потому что только серверу доверяем HP)
         DealPhysDamage();
     }
 
-    [ServerRpc] // Выполняется на сервере
-    private void ProcessMagicAttackServerRpc()
+    [ServerRpc]
+    private void ProcessMagicAttackServerRpc(Vector3 lookDir)
     {
-        // Сервер говорит всем клиентам запустить анимацию
-        PlayAttackAnimationObserversRpc("AttackMag");
+        // На сервере запоминаем, куда именно целился игрок (любой: первый или второй)
+        _serverShootDirection = lookDir;
+        _serverShootDirection.y = 0; // Чтобы пуля не летела в небо или в землю
 
-        // Магия заспавнится через Animation Event (метод ShootMagic)
-        // Но в сетевой игре ShootMagic тоже должен быть серверным.
+        // Поворачиваем персонажа на сервере, чтобы ShootMagic сработал верно
+        if (_serverShootDirection != Vector3.zero)
+        {
+            transform.forward = _serverShootDirection;
+        }
+
+        PlayAttackAnimationObserversRpc("AttackMag");
     }
 
-    [ObserversRpc] // Выполняется у всех игроков на экране
+    [ObserversRpc]
     private void PlayAttackAnimationObserversRpc(string triggerName)
     {
         if (animator != null) animator.SetTrigger(triggerName);
@@ -105,9 +109,10 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
 
         if (magicPrefab != null && firePoint != null)
         {
-            GameObject ball = Instantiate(magicPrefab, firePoint.position, firePoint.rotation);
+            // Используем transform.rotation, который мы обновили в RPC выше
+            GameObject ball = Instantiate(magicPrefab, firePoint.position, transform.rotation);
 
-            // ОЧЕНЬ ВАЖНО: В FishNet нужно "заспавнить" объект в сети, чтобы все его увидели
+            // Заспавнить в сети, чтобы все увидели
             ServerManager.Spawn(ball, Owner);
         }
     }
@@ -115,7 +120,6 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
     // Этот метод вызывается анимацией или из RPC
     public void DealPhysDamage()
     {
-        // Только сервер обсчитывает урон
         if (!IsServer) return;
 
         Vector3 pos = transform.position + transform.forward * 1.5f + Vector3.up;
@@ -123,9 +127,11 @@ public class PlayerCombat : NetworkBehaviour // Изменили на NetworkBeh
 
         foreach (var enemy in enemies)
         {
-            if (enemy.TryGetComponent<IDamageable>(out var target))
+            // Ищем здоровье в родителе (фикс для костей Mixamo)
+            Health targetHealth = enemy.GetComponentInParent<Health>();
+            if (targetHealth != null)
             {
-                target.TakeDamage(physDamage, 0);
+                targetHealth.TakeDamage(physDamage, 0);
             }
         }
     }
