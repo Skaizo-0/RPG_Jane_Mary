@@ -1,29 +1,24 @@
 using UnityEngine;
 using FishNet.Object;
-using FishNet.Object.Synchronizing;
+using FishNet.Object.Synchronizing; // Обязательно для SyncVar<T>
 
 public class PlayerScore : NetworkBehaviour
 {
-    // Сетевая переменная очков. Срабатывает OnChange для обновления UI
-    [SyncVar(OnChange = nameof(OnScoreChanged))]
-    private int _score = 0;
+    // В FishNet 4.0+ используем readonly SyncVar<T> вместо атрибута [SyncVar]
+    private readonly SyncVar<int> _score = new SyncVar<int>();
 
-    public int CurrentScore => _score;
+    // Свойство для чтения очков (теперь через .Value)
+    public int CurrentScore => _score.Value;
 
     // Метод для сервера: добавить очко
     [ServerRpc(RequireOwnership = false)]
     public void AddPointServerRpc()
     {
-        _score++;
-    }
+        if (!IsServer) return;
 
-    private void OnScoreChanged(int prev, int next, bool asServer)
-    {
-        // Когда очки меняются, мы просим Бутстраппер обновить HUD, 
-        // но только если это наш локальный игрок
-        if (IsOwner && Bootstrapper.Instance != null)
-        {
-            // Мы обновим HUD через HUD_Controller, который уже есть в Bootstrapper
-        }
+        // Меняем значение через .Value
+        _score.Value++;
+
+        Debug.Log($"[SERVER] Очки игрока {OwnerId} теперь: {_score.Value}");
     }
 }

@@ -1,11 +1,10 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Unity.Cinemachine; // Для новой Cinemachine (v3)
+using Unity.Cinemachine;
 using System.Collections;
 
 public class Bootstrapper : MonoBehaviour
 {
-    // Синглтон, чтобы заспавненный игрок мог найти этот скрипт
     public static Bootstrapper Instance;
 
     [Header("Игрок")]
@@ -26,7 +25,6 @@ public class Bootstrapper : MonoBehaviour
 
     void Awake()
     {
-        // КРИТИЧЕСКИЙ ФИКС: Бутстраппер должен выжить при смене сцены!
         if (Instance == null)
         {
             Instance = this;
@@ -62,17 +60,26 @@ public class Bootstrapper : MonoBehaviour
 
     public void RegisterPlayer(PlayerMovement move, PlayerCombat combat, Health health)
     {
-        // Привязываем локального игрока к бутстрапперу
         playerMove = move;
         playerCombat = combat;
         playerHealth = health;
 
-        // Инициализируем контроллер интерфейса для этого игрока
-        _hudController = new HUD_Controller(uiHudView, playerHealth, playerCombat);
+        // КРИТИЧЕСКИЙ ФИКС: Ищем новый HUD в текущей сцене (пустыне)
+        // Раньше тут использовалась старая ссылка из меню, которая ломалась
+        uiHudView = Object.FindAnyObjectByType<UI_HUD>();
+
+        if (uiHudView != null)
+        {
+            _hudController = new HUD_Controller(uiHudView, playerHealth, playerCombat);
+            Debug.Log("[BOOTSTRAPPER] HUD найден и успешно подключен к игроку!");
+        }
+        else
+        {
+            Debug.LogError("[BOOTSTRAPPER] ОШИБКА: UI_HUD не найден на этой сцене!");
+        }
 
         Debug.Log($"[BOOTSTRAPPER] Игрок {move.name} успешно зарегистрирован!");
 
-        // Запускаем поиск камеры
         StartCoroutine(SetupCameraWithRetry(move.transform));
     }
 
@@ -102,7 +109,6 @@ public class Bootstrapper : MonoBehaviour
             attempts++;
             yield return new WaitForSeconds(0.1f);
         }
-        Debug.LogError("[CAMERA] ОШИБКА: Камера не найдена!");
     }
 
     public void TogglePause()

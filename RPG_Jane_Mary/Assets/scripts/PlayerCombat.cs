@@ -23,6 +23,9 @@ public class PlayerCombat : NetworkBehaviour
     private IInputService _input;
     private Transform _cam;
 
+    // --- НОВОЕ: Ссылка на свои очки ---
+    private PlayerScore _myScore;
+
     public float MagicReadyProgress => Mathf.Clamp01((Time.time - _lastMagicTime) / magicCooldown);
 
     public void Construct(IInputService input)
@@ -31,15 +34,20 @@ public class PlayerCombat : NetworkBehaviour
         if (Camera.main != null) _cam = Camera.main.transform;
     }
 
+    public override void OnStartNetwork()
+    {
+        base.OnStartNetwork();
+        // Запоминаем ссылку на свои очки
+        _myScore = GetComponent<PlayerScore>();
+    }
+
     void Update()
     {
         if (!IsOwner) return;
 
-        // ФИКС: Если ввод пустой (напр. после смены сцены) - создаем его сами
         if (_input == null)
         {
             _input = new StandaloneInput();
-            Debug.Log("[COMBAT] Ввод переназначен автоматически.");
         }
 
         if (_input.AttackPhys)
@@ -110,11 +118,11 @@ public class PlayerCombat : NetworkBehaviour
 
         foreach (var enemy in enemies)
         {
-            // Ищем здоровье в родителях (ОБЯЗАТЕЛЬНО для мобов)
             Health targetHealth = enemy.GetComponentInParent<Health>();
             if (targetHealth != null)
             {
-                targetHealth.TakeDamage(physDamage, 0);
+                // ИЗМЕНЕНО: Передаем _myScore, чтобы сервер знал, кому дать очко
+                targetHealth.TakeDamageWithAttacker(physDamage, 0, _myScore);
             }
         }
     }

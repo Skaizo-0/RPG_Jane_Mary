@@ -848,6 +848,7 @@ GameObject:
   - component: {fileID: 8911079724349308233}
   - component: {fileID: 6807646776173894225}
   - component: {fileID: -4865070144242065825}
+  - component: {fileID: -7957507734732842172}
   m_Layer: 0
   m_Name: Ch19_nonPBR(1)
   m_TagString: Player
@@ -1043,7 +1044,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584204770558728989
+  _initializedTimestamp: -8584204697548377386
 --- !u!114 &6807646776173894225
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1112,6 +1113,21 @@ MonoBehaviour:
   _interpolation: 2
   _clientAuthoritative: 1
   _sendToOwner: 0
+--- !u!114 &-7957507734732842172
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3029423244833552785}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d422c6f8145e36949ad633581bfdf69d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerScore
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 0}
+  _networkObjectCache: {fileID: 0}
 --- !u!1 &3686544924812442958
 GameObject:
   m_ObjectHideFlags: 0

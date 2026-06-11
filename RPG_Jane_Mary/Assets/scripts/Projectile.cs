@@ -1,7 +1,7 @@
 using UnityEngine;
-using FishNet.Object; // Добавили
+using FishNet.Object;
 
-public class Projectile : NetworkBehaviour // Изменили на NetworkBehaviour
+public class Projectile : NetworkBehaviour
 {
     [Header("Основные настройки")]
     public float speed = 15f;
@@ -16,31 +16,26 @@ public class Projectile : NetworkBehaviour // Изменили на NetworkBehav
 
     private Transform _target;
 
-    // В FishNet Start заменяем на OnStartNetwork или OnStartServer
     public override void OnStartNetwork()
     {
         base.OnStartNetwork();
-        // Удаляем объект через время (только на сервере)
         if (IsServer) Invoke(nameof(DestroyProjectile), lifetime);
-
         FindTarget();
     }
 
     private void DestroyProjectile()
     {
-        ServerManager.Despawn(gameObject);
+        if (IsServer) ServerManager.Despawn(gameObject);
     }
 
     void Update()
     {
-        // Поворот к цели (пусть работает у всех для красоты)
         if (_target != null)
         {
             Vector3 direction = (_target.position + Vector3.up - transform.position).normalized;
             Quaternion targetRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, homingStrength * Time.deltaTime);
         }
-
         transform.Translate(Vector3.forward * speed * Time.deltaTime);
     }
 
@@ -52,14 +47,10 @@ public class Projectile : NetworkBehaviour // Изменили на NetworkBehav
 
         foreach (var col in enemies)
         {
+            if (Owner.IsValid && col.transform.root == Owner.FirstObject.transform.root) continue;
             Vector3 dirToEnemy = (col.transform.position - transform.position).normalized;
             float angle = Vector3.Angle(transform.forward, dirToEnemy);
-
-            if (angle < closestAngle)
-            {
-                closestAngle = angle;
-                bestTarget = col.transform;
-            }
+            if (angle < closestAngle) { closestAngle = angle; bestTarget = col.transform; }
         }
         _target = bestTarget;
     }
@@ -68,30 +59,37 @@ public class Projectile : NetworkBehaviour // Изменили на NetworkBehav
     {
         if (!IsServer) return;
 
-        // 1. Пытаемся взять компонент здоровья у того, в кого попали
-        if (other.TryGetComponent<IDamageable>(out var target))
-        {
-            // ПРОВЕРКА: Не попали ли мы в того, кто выпустил эту пулю?
-            // Если у пули нет Owner (это враг), то она может бить Игрока.
-            // Если Owner есть (это игрок), она не должна бить Игрока.
+        if (Owner.IsValid && other.transform.root == Owner.FirstObject.transform.root) return;
 
-            bool hitByAI = (Owner.ClientId == -1 || Owner == null); // Пуля от врага
+        // Ищем скрипт Health
+        Health targetHealth = other.GetComponentInParent<Health>();
+
+        if (targetHealth != null)
+        {
+            bool isMonsterBullet = !Owner.IsValid;
             bool targetIsPlayer = other.CompareTag("Player");
 
-            if (hitByAI && targetIsPlayer)
+            if (isMonsterBullet && targetIsPlayer)
             {
-                target.TakeDamage(0, damage); // Враг попал в игрока
+                targetHealth.TakeDamage(0, damage);
                 DestroyProjectile();
             }
             else if (!targetIsPlayer)
             {
-                target.TakeDamage(0, damage); // Игрок или враг попал в моба
+                // --- НОВОЕ: Берем PlayerScore того, кто выпустил пулю ---
+                PlayerScore attacker = null;
+                if (Owner.IsValid && Owner.FirstObject != null)
+                {
+                    attacker = Owner.FirstObject.GetComponent<PlayerScore>();
+                }
+
+                // Наносим урон с указанием атакующего
+                targetHealth.TakeDamageWithAttacker(0, damage, attacker);
                 DestroyProjectile();
             }
         }
         else if (!other.isTrigger)
         {
-            // Попадание в стену
             DestroyProjectile();
         }
     }

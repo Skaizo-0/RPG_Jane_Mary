@@ -46,10 +46,10 @@ public class Health : NetworkBehaviour, IDamageable
     public void TakeDamage(float phys, float mag)
     {
         // Этот метод для совместимости с интерфейсом, вызываем расширенный
-        TakeDamageExtended(phys, mag, null);
+        TakeDamageWithAttacker(phys, mag, null);
     }
 
-    public void TakeDamageExtended(float phys, float mag, PlayerScore attacker)
+    public void TakeDamageWithAttacker(float phys, float mag, PlayerScore attacker)
     {
         if (!IsServer || _isDead) return;
 
