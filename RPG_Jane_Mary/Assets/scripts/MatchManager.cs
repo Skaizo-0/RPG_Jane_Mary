@@ -17,6 +17,7 @@ public class MatchManager : NetworkBehaviour
     public override void OnStartServer()
     {
         base.OnStartServer();
+        // Мы можем оставить подписку здесь, но теперь Health вызывает это и вручную
         Health.OnAnyPlayerDeath += HandleDefeat;
         _matchEnded = false;
     }
@@ -27,22 +28,24 @@ public class MatchManager : NetworkBehaviour
         Health.OnAnyPlayerDeath -= HandleDefeat;
     }
 
-    private void HandleDefeat()
+    // ИСПРАВЛЕНИЕ: Добавлено слово public, чтобы ушла ошибка CS0122
+    public void HandleDefeat()
     {
         if (!IsServer || _matchEnded) return;
         _matchEnded = true;
 
         Debug.Log("[SERVER] КОНЕЦ ИГРЫ: ПОРАЖЕНИЕ");
 
-        // 1. Останавливаем мир для всех
+        // ОСТАНАВЛИВАЕМ ВСЁ (Пауза для всех)
         StopAllActivityObserversRpc();
 
-        // 2. Показываем окна
+        // Показываем окна через первого попавшегося игрока
         foreach (var client in ServerManager.Clients.Values)
         {
             if (client.FirstObject != null)
             {
-                client.FirstObject.GetComponent<Health>().ShowEndGameUIObserversRpc(false);
+                var health = client.FirstObject.GetComponent<Health>();
+                if (health != null) health.ShowEndGameUIObserversRpc(false);
                 break;
             }
         }
@@ -57,15 +60,15 @@ public class MatchManager : NetworkBehaviour
 
         Debug.Log("[SERVER] КОНЕЦ ИГРЫ: ПОБЕДА");
 
-        // 1. Останавливаем мир для всех
+        // ОСТАНАВЛИВАЕМ ВСЁ (Пауза для всех)
         StopAllActivityObserversRpc();
 
-        // 2. Показываем окна
         foreach (var client in ServerManager.Clients.Values)
         {
             if (client.FirstObject != null)
             {
-                client.FirstObject.GetComponent<Health>().ShowEndGameUIObserversRpc(true);
+                var health = client.FirstObject.GetComponent<Health>();
+                if (health != null) health.ShowEndGameUIObserversRpc(true);
                 break;
             }
         }
@@ -76,29 +79,31 @@ public class MatchManager : NetworkBehaviour
     [ObserversRpc]
     private void StopAllActivityObserversRpc()
     {
-        // ВЫКЛЮЧАЕМ ВСЁ
-        // 1. Движение и бой игроков
-        PlayerMovement[] players = Object.FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None);
-        foreach (var p in players) p.enabled = false;
+        // Отключаем движение всем
+        PlayerMovement[] allMoves = Object.FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None);
+        foreach (var m in allMoves) m.enabled = false;
 
-        PlayerCombat[] combats = Object.FindObjectsByType<PlayerCombat>(FindObjectsSortMode.None);
-        foreach (var c in combats) c.enabled = false;
+        // Отключаем атаки всем
+        PlayerCombat[] allCombats = Object.FindObjectsByType<PlayerCombat>(FindObjectsSortMode.None);
+        foreach (var c in allCombats) c.enabled = false;
 
-        // 2. ИИ врагов
-        EnemyAI[] enemies = Object.FindObjectsByType<EnemyAI>(FindObjectsSortMode.None);
-        foreach (var e in enemies) e.enabled = false;
+        // Отключаем ИИ всем мобам
+        EnemyAI[] allEnemies = Object.FindObjectsByType<EnemyAI>(FindObjectsSortMode.None);
+        foreach (var e in allEnemies) e.enabled = false;
 
-        Debug.Log("[CLIENT] Геймплей остановлен (Пауза финала)");
+        // Показываем курсор
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     private IEnumerator ReturnToLobbyRoutine()
     {
-        // Даем 7 секунд насладиться результатом
-        yield return new WaitForSeconds(7f);
+        // Ждем 6 секунд, чтобы игроки увидели экран смерти/победы
+        yield return new WaitForSeconds(6f);
 
         if (IsServer)
         {
-            Debug.Log("[SERVER] Возврат в меню...");
+            Debug.Log("[SERVER] Возвращение в главное меню...");
             SceneLoadData sld = new SceneLoadData("MainMenu");
             sld.ReplaceScenes = ReplaceOption.All;
             InstanceFinder.SceneManager.LoadGlobalScenes(sld);

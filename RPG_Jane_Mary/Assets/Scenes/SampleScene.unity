@@ -34925,6 +34925,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 155560312399036359, guid: c255a97f0f00f934fade030c353aff54, type: 3}
   m_PrefabInstance: {fileID: 572136202}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &574298520
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 574298521}
+  m_Layer: 0
+  m_Name: Spawn_POint (6)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &574298521
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 574298520}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 174.62, y: 8.31, z: 273.71}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &574763115
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -68509,7 +68540,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hudView: {fileID: 615883160}
   bossPrefab: {fileID: 7090497335443332626, guid: a90ebba0209cf174496d5e656b5fcf87, type: 3}
-  bossSpawnPoint: {fileID: 0}
+  bossSpawnPoint: {fileID: 574298521}
   victoryMusic: {fileID: 8300000, guid: cbce71d02f58dcc4fbcb3ec3a668c270, type: 3}
 --- !u!4 &1074218564
 Transform:
@@ -68537,7 +68568,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 8300000, guid: cbce71d02f58dcc4fbcb3ec3a668c270, type: 3}
+  m_Resource: {fileID: 8300000, guid: 0330762d2b3c8d641bfe11ad89b7e196, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
@@ -137529,4 +137560,5 @@ SceneRoots:
   - {fileID: 1636677640}
   - {fileID: 1754515988}
   - {fileID: 1566473606}
+  - {fileID: 574298521}
   - {fileID: 636271872}

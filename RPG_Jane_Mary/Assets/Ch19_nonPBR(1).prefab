@@ -411,7 +411,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
   m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -1034,6 +1034,8 @@ MonoBehaviour:
   - {fileID: 8298803573976595864}
   - {fileID: 6807646776173894225}
   - {fileID: -4865070144242065825}
+  - {fileID: -7957507734732842172}
+  - {fileID: 0}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -1044,7 +1046,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584204697548377386
+  _initializedTimestamp: -8584204636037661027
 --- !u!114 &6807646776173894225
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1125,9 +1127,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d422c6f8145e36949ad633581bfdf69d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerScore
-  _componentIndexCache: 255
-  _addedNetworkObject: {fileID: 0}
-  _networkObjectCache: {fileID: 0}
+  _componentIndexCache: 5
+  _addedNetworkObject: {fileID: 8911079724349308233}
+  _networkObjectCache: {fileID: 8911079724349308233}
 --- !u!1 &3686544924812442958
 GameObject:
   m_ObjectHideFlags: 0

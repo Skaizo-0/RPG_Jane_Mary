@@ -2156,6 +2156,8 @@ GameObject:
   - component: {fileID: 6423551635245313125}
   - component: {fileID: 266370699169192807}
   - component: {fileID: 9038415321396347106}
+  - component: {fileID: 2156551955351974621}
+  - component: {fileID: -906449049345952592}
   m_Layer: 3
   m_Name: BOSS 1
   m_TagString: Boss
@@ -2243,7 +2245,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 9038415321396347106}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 9038415321396347106}
   maxHp: 500
   animator: {fileID: 3550965107167859527}
 --- !u!114 &266370699169192807
@@ -2258,10 +2260,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f0ae06944a7eff4abdc5f3cb7c3cce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 1
+  _addedNetworkObject: {fileID: 9038415321396347106}
+  _networkObjectCache: {fileID: 9038415321396347106}
   enemyType: 1
   player: {fileID: 0}
   animator: {fileID: 3550965107167859527}
-  controller: {fileID: 0}
+  controller: {fileID: 8653554002649165659}
   chaseDistance: 15
   attackDist: 8
   speed: 2
@@ -2272,7 +2277,7 @@ MonoBehaviour:
   isMeleeWeapon: 0
   rangedStaff: {fileID: 8920980513038992507}
   meleeStaff: {fileID: 2345522200420746512}
-  audioSource: {fileID: 2516689551033996802}
+  bossAudioSource: {fileID: 0}
   elementSounds:
   - {fileID: 8300000, guid: 901e434c75a16184082ff7b69f6e2363, type: 3}
   - {fileID: 8300000, guid: 6ca6cb837de7e3a4ab1cc62a0ff1853a, type: 3}
@@ -2314,22 +2319,24 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 65535
+  <PrefabId>k__BackingField: 13
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 11904386428841716456
   SceneId: 0
   SerializedTransformProperties:
-    Position: {x: 0, y: 0, z: 0}
-    Rotation: {x: 0, y: 0, z: 0, w: 0}
-    Scale: {x: 0, y: 0, z: 0}
-    IsValid: 0
+    Position: {x: 0.81, y: -1.77, z: -4.41}
+    Rotation: {x: 0, y: 0, z: 0, w: 1}
+    Scale: {x: 1.4411314, y: 1.4411314, z: 1.4411314}
+    IsValid: 1
   <IsNested>k__BackingField: 0
   WasActiveDuringEdit: 0
   WasActiveDuringEdit_Set1: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
-  NetworkBehaviours: []
+  NetworkBehaviours:
+  - {fileID: 6423551635245313125}
+  - {fileID: 266370699169192807}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -2340,7 +2347,75 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: 0
+  _initializedTimestamp: -8584204628782316905
+--- !u!114 &2156551955351974621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7090497335443332626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Transforming.NetworkTransform
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 9038415321396347106}
+  _networkObjectCache: {fileID: 0}
+  _componentConfiguration: 0
+  _synchronizeParent: 0
+  _packing:
+    Position: 1
+    Rotation: 1
+    Scale: 0
+  _useScaledTime: 1
+  _interpolation: 2
+  _extrapolation: 2
+  _enableTeleport: 0
+  _teleportThreshold: 1
+  _clientAuthoritative: 1
+  _sendToOwner: 1
+  _interval: 1
+  _synchronizePosition: 1
+  _positionSensitivity: 0.001
+  _positionSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+  _synchronizeRotation: 1
+  _rotationSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+  _synchronizeScale: 1
+  _scaleSensitivity: 0.001
+  _scaleSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+--- !u!114 &-906449049345952592
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7090497335443332626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8cac635f24954048aad3a6ff9110beb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Animating.NetworkAnimator
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 9038415321396347106}
+  _networkObjectCache: {fileID: 0}
+  IgnoredParameters: []
+  _animator: {fileID: 3550965107167859527}
+  _synchronizeWhenDisabled: 0
+  _smoothFloats: 1
+  _interpolation: 2
+  _clientAuthoritative: 1
+  _sendToOwner: 0
 --- !u!1 &7102279935489848682
 GameObject:
   m_ObjectHideFlags: 0

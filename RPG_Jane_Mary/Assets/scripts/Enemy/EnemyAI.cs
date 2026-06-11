@@ -24,6 +24,10 @@ public class EnemyAI : NetworkBehaviour
     public GameObject magicPrefab;
     public Transform firePoint;
 
+    [Header("Звуки (Мультиплеер)")]
+    public AudioSource audioSource; // Ссылка на компонент звука
+    public AudioClip attackSound;   // Файл звука атаки
+
     // Ссылки на машину состояний (сохранено полностью)
     public EnemyStateMachine StateMachine { get; private set; }
     public IdleState IdleState { get; private set; }
@@ -42,6 +46,9 @@ public class EnemyAI : NetworkBehaviour
         Health = GetComponent<Health>();
         controller = GetComponent<CharacterController>();
 
+        // Авто-поиск компонента звука, если забыли назначить
+        if (audioSource == null) audioSource = GetComponent<AudioSource>();
+
         StateMachine = new EnemyStateMachine();
         IdleState = new IdleState(this, StateMachine);
         AggroState = new AggroState(this, StateMachine);
@@ -52,9 +59,8 @@ public class EnemyAI : NetworkBehaviour
     public override void OnStartServer()
     {
         base.OnStartServer();
-        Debug.Log(
-        $"ENEMY SERVER START {gameObject.name}"
-    );
+        Debug.Log($"ENEMY SERVER START {gameObject.name}");
+
         if (enemyType == EnemyType.Ranged) attackDist = 8f;
 
         Health.OnHealthChanged += (cur, max) =>
@@ -175,6 +181,7 @@ public class EnemyAI : NetworkBehaviour
             _lastAttackTime = Time.time;
             string trigger = (enemyType == EnemyType.Melee) ? "AttackPh" : "AttackMa";
 
+            // Вызываем сетевой метод (Анимация + Звук)
             PlayAttackAnimationObserversRpc(trigger);
 
             if (enemyType == EnemyType.Melee) StartCoroutine(DelayedMeleeDamage(0.6f));
@@ -185,7 +192,14 @@ public class EnemyAI : NetworkBehaviour
     [ObserversRpc]
     private void PlayAttackAnimationObserversRpc(string triggerName)
     {
+        // Проигрываем анимацию у всех
         if (animator != null) animator.SetTrigger(triggerName);
+
+        // ПРОИГРЫВАЕМ ЗВУК У ВСЕХ
+        if (audioSource != null && attackSound != null)
+        {
+            audioSource.PlayOneShot(attackSound);
+        }
     }
 
     private IEnumerator DelayedMeleeDamage(float delay)

@@ -20,15 +20,20 @@ public class Health : NetworkBehaviour, IDamageable
     public float MaxHealth => maxHp;
     public Animator animator;
 
-    // Переменная для хранения последнего ударившего (на сервере)
     private PlayerScore _lastAttacker;
 
     public override void OnStartNetwork()
     {
         base.OnStartNetwork();
         _currentHp.OnChange += OnHpChanged;
+
         if (IsServer) _currentHp.Value = maxHp;
+
+        // СБРОС СОСТОЯНИЯ ПРИ СПАВНЕ
         _isDead = false;
+
+        // Принудительно включаем системы (на случай если в префабе они выключены)
+        DisablePlayerSystemsObserversRpc(false);
     }
 
     public override void OnStopNetwork()
@@ -42,10 +47,8 @@ public class Health : NetworkBehaviour, IDamageable
         OnHealthChanged?.Invoke(next, maxHp);
     }
 
-    // ИЗМЕНЕНО: теперь принимает объект атакующего
     public void TakeDamage(float phys, float mag)
     {
-        // Этот метод для совместимости с интерфейсом, вызываем расширенный
         TakeDamageWithAttacker(phys, mag, null);
     }
 
@@ -53,7 +56,6 @@ public class Health : NetworkBehaviour, IDamageable
     {
         if (!IsServer || _isDead) return;
 
-        // Запоминаем, кто ударил последним
         if (attacker != null) _lastAttacker = attacker;
 
         if (_currentHp.Value <= 0) return;
@@ -76,11 +78,9 @@ public class Health : NetworkBehaviour, IDamageable
         if (!IsServer || _isDead) return;
         _isDead = true;
 
-        // Если это моб и у него был атакующий - начисляем ему очко
         if (!gameObject.CompareTag("Player") && _lastAttacker != null)
         {
             _lastAttacker.AddPointServerRpc();
-            Debug.Log($"[SERVER] Очко начислено игроку: {_lastAttacker.OwnerId}");
         }
 
         PlayDieObserversRpc();
@@ -90,6 +90,9 @@ public class Health : NetworkBehaviour, IDamageable
             OnPlayerDeath?.Invoke();
             OnAnyPlayerDeath?.Invoke();
             DisablePlayerSystemsObserversRpc(true);
+
+            // Если есть MatchManager, сообщаем о поражении
+            if (MatchManager.Instance != null) MatchManager.Instance.HandleDefeat();
         }
         else
         {
@@ -103,9 +106,8 @@ public class Health : NetworkBehaviour, IDamageable
     {
         if (animator)
         {
+            // Убрали ResetTrigger("AttackPhys"), так как его нет в аниматоре
             animator.SetTrigger("Die");
-            animator.ResetTrigger("AttackPhys");
-            animator.ResetTrigger("AttackMag");
         }
     }
 

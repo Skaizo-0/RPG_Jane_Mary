@@ -64,35 +64,47 @@ public class Bootstrapper : MonoBehaviour
         playerCombat = combat;
         playerHealth = health;
 
-        // КРИТИЧЕСКИЙ ФИКС: Ищем новый HUD в текущей сцене (пустыне)
-        // Раньше тут использовалась старая ссылка из меню, которая ломалась
-        uiHudView = Object.FindAnyObjectByType<UI_HUD>();
+        Debug.Log($"[BOOTSTRAPPER] Игрок {move.name} зарегистрирован. Запускаю поиск интерфейса и камеры...");
+
+        // ИСПРАВЛЕНИЕ: Мы запускаем корутину, которая подождет, пока HUD появится в новой сцене
+        StartCoroutine(SetupUIAndCameraDeferred(move, combat, health));
+    }
+
+    private IEnumerator SetupUIAndCameraDeferred(PlayerMovement move, PlayerCombat combat, Health health)
+    {
+        // 1. Ищем HUD (цикл ожидания)
+        uiHudView = null;
+        int hudAttempts = 0;
+
+        while (uiHudView == null && hudAttempts < 50) // Пытаемся найти в течение 5 секунд
+        {
+            uiHudView = Object.FindAnyObjectByType<UI_HUD>();
+            if (uiHudView == null)
+            {
+                yield return new WaitForSeconds(0.1f);
+                hudAttempts++;
+            }
+        }
 
         if (uiHudView != null)
         {
-            _hudController = new HUD_Controller(uiHudView, playerHealth, playerCombat);
-            Debug.Log("[BOOTSTRAPPER] HUD найден и успешно подключен к игроку!");
+            _hudController = new HUD_Controller(uiHudView, health, combat);
+            Debug.Log("[BOOTSTRAPPER] HUD найден и успешно подключен!");
         }
         else
         {
-            Debug.LogError("[BOOTSTRAPPER] ОШИБКА: UI_HUD не найден на этой сцене!");
+            Debug.LogError("[BOOTSTRAPPER] КРИТИЧЕСКАЯ ОШИБКА: UI_HUD не появился на сцене за 5 секунд!");
         }
 
-        Debug.Log($"[BOOTSTRAPPER] Игрок {move.name} успешно зарегистрирован!");
-
-        StartCoroutine(SetupCameraWithRetry(move.transform));
-    }
-
-    private IEnumerator SetupCameraWithRetry(Transform target)
-    {
-        int attempts = 0;
-        while (attempts < 30)
+        // 2. Ищем камеру (твой оригинальный код поиска)
+        int camAttempts = 0;
+        while (camAttempts < 30)
         {
             var v3Cam = Object.FindAnyObjectByType<CinemachineCamera>();
             if (v3Cam != null)
             {
-                v3Cam.Follow = target;
-                v3Cam.LookAt = target;
+                v3Cam.Follow = move.transform;
+                v3Cam.LookAt = move.transform;
                 Debug.Log($"[CAMERA] Новая Cinemachine Camera привязана!");
                 yield break;
             }
@@ -100,16 +112,18 @@ public class Bootstrapper : MonoBehaviour
             var freeLook = Object.FindAnyObjectByType<CinemachineFreeLook>();
             if (freeLook != null)
             {
-                freeLook.Follow = target;
-                freeLook.LookAt = target;
+                freeLook.Follow = move.transform;
+                freeLook.LookAt = move.transform;
                 Debug.Log($"[CAMERA] Старая Cinemachine FreeLook привязана!");
                 yield break;
             }
 
-            attempts++;
+            camAttempts++;
             yield return new WaitForSeconds(0.1f);
         }
     }
+
+    // --- Все твои методы ниже оставлены без изменений ---
 
     public void TogglePause()
     {
@@ -122,6 +136,7 @@ public class Bootstrapper : MonoBehaviour
         {
             bool isPaused = !pausePanel.activeSelf;
             pausePanel.SetActive(isPaused);
+
             Time.timeScale = isPaused ? 0f : 1f;
             Cursor.lockState = isPaused ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = isPaused;
@@ -146,15 +161,24 @@ public class Bootstrapper : MonoBehaviour
     public void SaveGame()
     {
         if (playerHealth == null) return;
-        PlayerData data = new PlayerData { Hp = playerHealth.CurrentHealth, MaxHp = playerHealth.MaxHealth, Position = playerMove.transform.position };
+
+        PlayerData data = new PlayerData
+        {
+            Hp = playerHealth.CurrentHealth,
+            MaxHp = playerHealth.MaxHealth,
+            Position = playerMove.transform.position
+        };
+
         _interactor.SaveGame(data);
     }
 
     public void LoadGame()
     {
         if (playerHealth == null) return;
+
         _interactor.LoadGame();
         PlayerData data = _interactor.Data;
+
         playerHealth.SetHealth(data.Hp);
         playerMove.Teleport(data.Position);
         CloseAllMenus();
