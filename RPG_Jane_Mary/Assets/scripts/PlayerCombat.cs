@@ -36,8 +36,10 @@ public class PlayerCombat : NetworkBehaviour
 
     void Update()
     {
-        // Только владелец персонажа может нажимать на кнопки атаки
-        if (!IsOwner || _input == null) return;
+        if (!IsOwner) return;
+
+        // СТРАХОВКА
+        if (_input == null) _input = new StandaloneInput();
 
         if (_input.AttackPhys)
         {

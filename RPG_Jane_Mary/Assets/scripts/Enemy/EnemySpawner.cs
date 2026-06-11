@@ -1,5 +1,9 @@
 using UnityEngine;
-using FishNet.Object; // Добавили
+using FishNet.Object;
+using UnityEngine.SceneManagement;
+
+using UnityScene = UnityEngine.SceneManagement.Scene;
+using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 
 public class EnemySpawner : NetworkBehaviour // Изменили на NetworkBehaviour
 {
@@ -27,9 +31,10 @@ public class EnemySpawner : NetworkBehaviour // Изменили на NetworkBehaviour
         }
     }
 
+    // В скрипте EnemySpawner метод SpawnEnemy
     void SpawnEnemy()
     {
-        if (enemyPrefabs.Length == 0) return;
+        if (!IsServer || enemyPrefabs.Length == 0) return;
 
         Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
         Vector3 spawnPos = transform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
@@ -37,14 +42,13 @@ public class EnemySpawner : NetworkBehaviour // Изменили на NetworkBehaviour
         int randomIndex = Random.Range(0, enemyPrefabs.Length);
         GameObject newEnemy = Instantiate(enemyPrefabs[randomIndex], spawnPos, Quaternion.identity);
 
-        // КЛЮЧЕВОЕ: Сначала спавним в сети
+        // ГАРАНТИРУЕМ, что враг в той же сцене, что и спавнер (SampleScene)
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(newEnemy, gameObject.scene);
+
         ServerManager.Spawn(newEnemy);
 
-        // Логика редкого моба
         if (Random.Range(0f, 100f) <= rareMobChance)
-        {
             MakeRare(newEnemy);
-        }
     }
 
     void MakeRare(GameObject enemy)

@@ -81,19 +81,26 @@ public class EnemyAI : NetworkBehaviour
 
     private void FindNearestPlayer()
     {
+        if (!IsServer) return;
+
         float minDistance = float.MaxValue;
         Transform closest = null;
 
-        foreach (NetworkConnection conn in ServerManager.Clients.Values)
+        // Используем AllPlayers из PlayerMovement
+        foreach (PlayerMovement p in PlayerMovement.AllPlayers)
         {
-            if (conn.FirstObject != null)
+            if (p == null) continue;
+
+            // ПРОВЕРКА: Игрок должен быть в той же сцене, что и враг!
+            if (p.gameObject.scene != gameObject.scene) continue;
+
+            if (p.TryGetComponent<Health>(out var hp) && hp.CurrentHealth <= 0) continue;
+
+            float dist = Vector3.Distance(transform.position, p.transform.position);
+            if (dist < chaseDistance && dist < minDistance)
             {
-                float dist = Vector3.Distance(transform.position, conn.FirstObject.transform.position);
-                if (dist < chaseDistance && dist < minDistance)
-                {
-                    minDistance = dist;
-                    closest = conn.FirstObject.transform;
-                }
+                minDistance = dist;
+                closest = p.transform;
             }
         }
         player = closest;

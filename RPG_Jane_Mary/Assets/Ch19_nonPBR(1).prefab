@@ -1012,7 +1012,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 24
+  <PrefabId>k__BackingField: 25
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 18207014510089526098
   SceneId: 0
@@ -1032,6 +1032,7 @@ MonoBehaviour:
   - {fileID: 8092219578462017087}
   - {fileID: 8298803573976595864}
   - {fileID: 6807646776173894225}
+  - {fileID: 4849679121365487493}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -1042,7 +1043,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584205621132172971
+  _initializedTimestamp: -8584204759441617511
 --- !u!114 &6807646776173894225
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1058,7 +1059,7 @@ MonoBehaviour:
   _componentIndexCache: 3
   _addedNetworkObject: {fileID: 8911079724349308233}
   _networkObjectCache: {fileID: 8911079724349308233}
-  _componentConfiguration: 0
+  _componentConfiguration: 1
   _synchronizeParent: 0
   _packing:
     Position: 1
@@ -1101,9 +1102,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8cac635f24954048aad3a6ff9110beb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Animating.NetworkAnimator
-  _componentIndexCache: 255
+  _componentIndexCache: 4
   _addedNetworkObject: {fileID: 8911079724349308233}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 8911079724349308233}
   IgnoredParameters: []
   _animator: {fileID: 3859512135198116615}
   _synchronizeWhenDisabled: 0
@@ -1268,13 +1269,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3854216241261810878}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0.043619405, z: 0, w: 0.9990483}
   m_LocalPosition: {x: -0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3392487727962876226}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 5, z: 0}
 --- !u!137 &12214896248375229
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0

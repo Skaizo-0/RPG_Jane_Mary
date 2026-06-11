@@ -32,12 +32,8 @@ public class Bootstrapper : MonoBehaviour
         _interactor = new GameInteractor(repo);
         _input = new StandaloneInput();
 
-        // Мы не инициализируем HUD тут, так как игрока еще нет.
-        // Это сделает метод RegisterPlayer позже.
-
-        //  CloseAllMenus();
-        Cursor.lockState = CursorLockMode.None; // Мышка свободна
-        Cursor.visible = true;                  // Мышку видно
+        // НЕ разблокируй мышь тут, если мы уже в игре!
+        // Пусть за это отвечает MainMenuController или метод HideMenus
         pausePanel.SetActive(false);
         gameMenuPanel.SetActive(false);
     }
@@ -70,30 +66,37 @@ public class Bootstrapper : MonoBehaviour
 
         Debug.Log("Сетевой игрок успешно зарегистрирован!");
 
-        // ПРИВЯЗКА КАМЕРЫ (Универсальный способ для новой и старой Cinemachine)
+        // ПРИВЯЗКА КАМЕРЫ (Универсальный способ для Unity 6)
 
-        // 1. Пытаемся найти новую Cinemachine Camera (v3)
-        var v3Cam = Object.FindFirstObjectByType<CinemachineCamera>();
-        if (v3Cam != null)
-        {
-            v3Cam.Follow = move.transform;
-            v3Cam.LookAt = move.transform;
-            Debug.Log("Новая Cinemachine Camera (v3) привязана!");
-            return; // Выходим, если нашли
-        }
-
-        // 2. Если не нашли, ищем старый FreeLook (v2)
+        // Ищем любую активную Cinemachine камеру
+        var cmCamera = Object.FindFirstObjectByType<CinemachineCamera>();
         var freeLook = Object.FindFirstObjectByType<CinemachineFreeLook>();
-        if (freeLook != null)
+
+        if (cmCamera != null)
+        {
+            cmCamera.Follow = move.transform;
+            cmCamera.LookAt = move.transform;
+
+            // ВЫКЛЮЧАЕМ Solo, если он был включен случайно
+            // cmCamera.IsLive = true; // Для v3 это делается так
+
+            Debug.Log("Cinemachine Camera привязана!");
+        }
+        else if (freeLook != null)
         {
             freeLook.Follow = move.transform;
             freeLook.LookAt = move.transform;
-            Debug.Log("Старая Cinemachine FreeLook (v2) привязана!");
+            Debug.Log("Cinemachine FreeLook привязана!");
         }
         else
         {
-            Debug.LogWarning("Критическая ошибка: На сцене не найдено ни одной Cinemachine камеры!");
+            Debug.LogError("Критическая ошибка: Камера Cinemachine не найдена на сцене!");
         }
+
+        // ВАЖНО: Принудительно блокируем мышь при регистрации, 
+        // чтобы камера начала слушать движения
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     public void TogglePause()

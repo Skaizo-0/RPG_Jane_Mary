@@ -34,14 +34,34 @@ public class MainMenuController
             _view.startMatchButton.onClick.AddListener(StartGameNetworked);
 
         InstanceFinder.SceneManager.OnLoadEnd += (args) => {
-            // Проверяем, что массив не пустой
             if (args.LoadedScenes != null && args.LoadedScenes.Length > 0)
             {
                 foreach (var scene in args.LoadedScenes)
                 {
                     if (scene.name == "SampleScene")
                     {
-                        Debug.Log("Игровая сцена загружена. Скрываю меню.");
+                        UnityEngine.SceneManagement.SceneManager.SetActiveScene(scene);
+                        Debug.Log("[SCENE] Active scene set to SampleScene");
+                        Debug.Log("[CLEANUP] Игровая сцена загружена. Чистим старые камеры...");
+
+                        // 1. Ищем ВСЕ камеры на сцене
+                        Camera[] allCameras = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+
+                        foreach (var cam in allCameras)
+                        {
+                            // 2. Если камера НЕ принадлежит новой сцене SampleScene — отключаем её
+                            if (cam.gameObject.scene.name != "SampleScene")
+                            {
+                                Debug.Log($"[CLEANUP] Отключаю камеру меню: {cam.name}");
+                                cam.tag = "Untagged"; // Убираем тег MainCamera
+                                cam.enabled = false;   // Выключаем саму камеру
+
+                                // Отключаем AudioListener, чтобы не было ошибок "2 listeners in scene"
+                                if (cam.TryGetComponent(out AudioListener listener))
+                                    listener.enabled = false;
+                            }
+                        }
+
                         HideMenus();
                         break;
                     }
