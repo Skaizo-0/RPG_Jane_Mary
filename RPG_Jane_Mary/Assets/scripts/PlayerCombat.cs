@@ -1,6 +1,7 @@
 using UnityEngine;
+using FishNet.Object; // Обязательно для сети
 
-public class PlayerCombat : MonoBehaviour
+public class PlayerCombat : NetworkBehaviour
 {
     public Animator animator;
     public Transform firePoint;
@@ -16,40 +17,44 @@ public class PlayerCombat : MonoBehaviour
     public float magicRotationOffset = 0f;
 
     [Header("Кулдаун магии (ТЗ)")]
-    public float magicCooldown = 3f; 
-    private float _lastMagicTime = -10f; 
+    public float magicCooldown = 3f;
+    private float _lastMagicTime = -10f;
 
     private IInputService _input;
     private Transform _cam;
 
-    
+    // Переменная для хранения направления выстрела на сервере
+    private Vector3 _serverShootDirection;
+
     public float MagicReadyProgress => Mathf.Clamp01((Time.time - _lastMagicTime) / magicCooldown);
 
-   
     public void Construct(IInputService input)
     {
         _input = input;
-        _cam = Camera.main.transform;
+        if (Camera.main != null) _cam = Camera.main.transform;
     }
 
     void Update()
     {
-        if (_input == null) return;
+        if (!IsOwner) return;
 
-       
+        // СТРАХОВКА
+        if (_input == null) _input = new StandaloneInput();
+
         if (_input.AttackPhys)
         {
             RotateToCamera(physRotationOffset);
-            animator.SetTrigger("AttackPhys");
-           
+            ProcessPhysicalAttackServerRpc();
         }
 
-       
         if (_input.AttackMag && Time.time >= _lastMagicTime + magicCooldown)
         {
-            _lastMagicTime = Time.time; 
+            _lastMagicTime = Time.time;
             RotateToCamera(magicRotationOffset);
-            animator.SetTrigger("AttackMag");
+
+            // КРИТИЧЕСКИЙ ФИКС: Берем направление нашей камеры и шлем его серверу
+            Vector3 lookDirection = _cam.forward;
+            ProcessMagicAttackServerRpc(lookDirection);
         }
     }
 
@@ -67,28 +72,68 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
+    // --- СЕТЕВАЯ ЛОГИКА ---
 
+    [ServerRpc]
+    private void ProcessPhysicalAttackServerRpc()
+    {
+        PlayAttackAnimationObserversRpc("AttackPhys");
+        DealPhysDamage();
+    }
+
+    [ServerRpc]
+    private void ProcessMagicAttackServerRpc(Vector3 lookDir)
+    {
+        // На сервере запоминаем, куда именно целился игрок (любой: первый или второй)
+        _serverShootDirection = lookDir;
+        _serverShootDirection.y = 0; // Чтобы пуля не летела в небо или в землю
+
+        // Поворачиваем персонажа на сервере, чтобы ShootMagic сработал верно
+        if (_serverShootDirection != Vector3.zero)
+        {
+            transform.forward = _serverShootDirection;
+        }
+
+        PlayAttackAnimationObserversRpc("AttackMag");
+    }
+
+    [ObserversRpc]
+    private void PlayAttackAnimationObserversRpc(string triggerName)
+    {
+        if (animator != null) animator.SetTrigger(triggerName);
+    }
+
+    // Этот метод вызывается анимацией (Animation Event)
     public void ShootMagic()
     {
+        // Только сервер имеет право создавать сетевые объекты
+        if (!IsServer) return;
+
         if (magicPrefab != null && firePoint != null)
         {
-            Instantiate(magicPrefab, firePoint.position, firePoint.rotation);
+            // Используем transform.rotation, который мы обновили в RPC выше
+            GameObject ball = Instantiate(magicPrefab, firePoint.position, transform.rotation);
+
+            // Заспавнить в сети, чтобы все увидели
+            ServerManager.Spawn(ball, Owner);
         }
     }
 
-
+    // Этот метод вызывается анимацией или из RPC
     public void DealPhysDamage()
     {
-       
+        if (!IsServer) return;
+
         Vector3 pos = transform.position + transform.forward * 1.5f + Vector3.up;
         Collider[] enemies = Physics.OverlapSphere(pos, physRange, enemyLayer);
 
         foreach (var enemy in enemies)
         {
-
-            if (enemy.TryGetComponent<IDamageable>(out var target))
+            // Ищем здоровье в родителе (фикс для костей Mixamo)
+            Health targetHealth = enemy.GetComponentInParent<Health>();
+            if (targetHealth != null)
             {
-                target.TakeDamage(physDamage, 0);
+                targetHealth.TakeDamage(physDamage, 0);
             }
         }
     }
