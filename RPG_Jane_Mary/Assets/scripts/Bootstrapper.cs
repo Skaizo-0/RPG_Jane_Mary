@@ -13,7 +13,13 @@ public class Bootstrapper : MonoBehaviour
 
     [Header("Панели Меню")]
     public GameObject pausePanel;   
-    public GameObject gameMenuPanel; 
+    public GameObject gameMenuPanel;
+
+    [Header("Префабы врагов")]
+    public GameObject meleeAggroPrefab;    // Агрессивный мечник
+    public GameObject meleePeacefulPrefab; // Мирный мечник
+    public GameObject rangedAggroPrefab;   // Агрессивный маг
+    public GameObject rangedPeacefulPrefab;// Мирный маг
 
     private GameInteractor _interactor;
     private HUD_Controller _hudController;
@@ -108,7 +114,8 @@ public class Bootstrapper : MonoBehaviour
                 {
                     Type = enemy.enemyType.ToString(),
                     Position = enemy.transform.position,
-                    CurrentHp = h.CurrentHealth
+                    CurrentHp = h.CurrentHealth,
+                    IsPeaceful = enemy.isPeaceful
                 });
             }
         }
@@ -121,31 +128,47 @@ public class Bootstrapper : MonoBehaviour
     {
         _interactor.LoadGame();
         PlayerData data = _interactor.Data;
+        if (data == null) return;
 
-        
         playerHealth.SetHealth(data.Hp);
         playerMove.Teleport(data.Position);
 
-       
+        // Очистка старых мобов
         EnemyAI[] currentEnemies = FindObjectsOfType<EnemyAI>();
+        foreach (var enemy in currentEnemies) Destroy(enemy.gameObject);
 
-
-        for (int i = 0; i < currentEnemies.Length; i++)
+        // Спавн новых мобов
+        foreach (var enemyData in data.Enemies)
         {
-            if (i < data.Enemies.Count)
-            {
-                currentEnemies[i].transform.position = data.Enemies[i].Position;
-                currentEnemies[i].GetComponent<Health>().SetHealth(data.Enemies[i].CurrentHp);
-                currentEnemies[i].gameObject.SetActive(true);
-            }
-            else
-            {
+            GameObject prefabToSpawn = null;
 
-                currentEnemies[i].gameObject.SetActive(false);
+            // Логика выбора из 4 префабов
+            if (enemyData.Type == "Melee")
+            {
+                prefabToSpawn = enemyData.IsPeaceful ? meleePeacefulPrefab : meleeAggroPrefab;
+            }
+            else if (enemyData.Type == "Ranged")
+            {
+                prefabToSpawn = enemyData.IsPeaceful ? rangedPeacefulPrefab : rangedAggroPrefab;
+            }
+
+            if (prefabToSpawn != null)
+            {
+                GameObject newEnemy = Instantiate(prefabToSpawn, enemyData.Position, Quaternion.identity);
+
+                EnemyAI ai = newEnemy.GetComponent<EnemyAI>();
+                Health hp = newEnemy.GetComponent<Health>();
+
+                if (hp != null) hp.SetHealth(enemyData.CurrentHp);
+                if (ai != null)
+                {
+                    ai.player = playerMove.transform;
+                    ai.isPeaceful = enemyData.IsPeaceful; // На всякий случай дублируем настройку в скрипт
+                }
             }
         }
 
-        Debug.Log("Загрузка завершена!");
+        Debug.Log($"Загрузка завершена! Создано мобов: {data.Enemies.Count}");
         CloseAllMenus();
     }
 

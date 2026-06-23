@@ -7,6 +7,7 @@ public class EnemySaveData
     public string Type; 
     public Vector3 Position;
     public float CurrentHp;
+    public bool IsPeaceful;
 }
 
 [System.Serializable]

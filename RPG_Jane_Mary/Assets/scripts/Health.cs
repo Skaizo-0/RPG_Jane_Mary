@@ -22,9 +22,13 @@ public class Health : MonoBehaviour, IDamageable
 
     public static event Action OnPlayerDeath;
 
-    private void Start()
+    private void Awake() // Заменяем Start на Awake
     {
         _currentHp = maxHp;
+    }
+    private void Start()
+    {
+        
         NotifyHealthChanged();
     }
 
