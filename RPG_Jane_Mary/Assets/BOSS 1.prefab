@@ -1940,6 +1940,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -2239,7 +2240,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 52b751e1467c86747b290f0495cef822, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 500
+  maxHp: 10
   animator: {fileID: 3550965107167859527}
 --- !u!114 &266370699169192807
 MonoBehaviour:
@@ -2253,8 +2254,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f0ae06944a7eff4abdc5f3cb7c3cce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyType: 1
-  player: {fileID: 0}
+  enemyType: 0
+  player: {fileID: 3392487727962876226, guid: a6cde7d9a0d8a3e4eb820251ad059bd8, type: 3}
   animator: {fileID: 3550965107167859527}
   controller: {fileID: 0}
   chaseDistance: 15
@@ -2264,7 +2265,7 @@ MonoBehaviour:
   magicPrefab: {fileID: 1923774466051800111, guid: 558aa8c7e9daf9144bc897cee71babd6, type: 3}
   firePoint: {fileID: 3059875229605099508}
   currentElement: 1
-  isMeleeWeapon: 0
+  isMeleeWeapon: 1
   rangedStaff: {fileID: 8920980513038992507}
   meleeStaff: {fileID: 2345522200420746512}
   audioSource: {fileID: 2516689551033996802}
@@ -2814,6 +2815,8 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2835,9 +2838,11 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &9080305595826045516
 GameObject:
@@ -2891,6 +2896,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2912,9 +2919,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0

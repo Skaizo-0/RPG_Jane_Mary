@@ -4,8 +4,9 @@ public class ScoreController : MonoBehaviour
 {
     [Header("Ссылки на UI")]
     public UI_HUD hudView;
+    public UI_Victory victoryUI; // <-- НОВАЯ ССЫЛКА
 
-    [Header("Настройки событий (ТЗ)")]
+    [Header("Параметры босса")]
     public GameObject bossPrefab;
     public Transform bossSpawnPoint;
     public AudioClip victoryMusic;
@@ -15,40 +16,36 @@ public class ScoreController : MonoBehaviour
 
     private void Start()
     {
-
         _audioService = ServiceLocator.Get<IAudioService>();
-
-
         Health.OnEnemyDeath += HandleKill;
-
         UpdateScoreUI();
     }
 
     private void OnDestroy()
     {
-
         Health.OnEnemyDeath -= HandleKill;
     }
 
     private void HandleKill(GameObject victim)
     {
-
-        if (victim.CompareTag("Boss")) return;
+        // ЕСЛИ УМЕР БОСС — ЭТО ПОБЕДА!
+        if (victim.CompareTag("Boss"))
+        {
+            PlayVictory();
+            return;
+        }
 
         _killCount++;
         UpdateScoreUI();
 
- 
+        // Спавним босса на 2-м убийстве
         if (_killCount == 2)
         {
             SpawnBoss();
         }
 
-
-        if (_killCount == 3)
-        {
-            PlayVictory();
-        }
+        // (Опционально) Если вы хотите победу просто по количеству убийств:
+        // if (_killCount == 10) PlayVictory(); 
     }
 
     private void UpdateScoreUI()
@@ -61,23 +58,27 @@ public class ScoreController : MonoBehaviour
     {
         if (bossPrefab == null || bossSpawnPoint == null) return;
 
-
         GameObject spawnedBoss = Instantiate(bossPrefab, bossSpawnPoint.position, bossSpawnPoint.rotation);
-
-
         BossAI bossScript = spawnedBoss.GetComponent<BossAI>();
 
         if (bossScript != null)
         {
-  
             bossScript.player = GameObject.FindGameObjectWithTag("Player").transform;
         }
     }
 
     private void PlayVictory()
     {
-        Debug.Log("СОБЫТИЕ: Победная музыка!");
-        if (victoryMusic != null)
+        Debug.Log("Победа!");
+
+        // 1. Показываем экран победы
+        if (victoryUI != null)
+        {
+            victoryUI.ShowVictoryScreen();
+        }
+
+        // 2. Играем музыку
+        if (victoryMusic != null && _audioService != null)
         {
             _audioService.PlayMusic(victoryMusic);
         }
