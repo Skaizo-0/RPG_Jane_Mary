@@ -8,6 +8,7 @@ public class Health : MonoBehaviour, IDamageable
     public float maxHp = 100f;
     private float _currentHp;
     public static event Action<GameObject> OnEnemyDeath;
+    public static event Action OnPlayerHit;
 
 
     public float CurrentHealth => _currentHp;
@@ -37,16 +38,18 @@ public class Health : MonoBehaviour, IDamageable
         if (_currentHp <= 0) return;
 
         _currentHp = Mathf.Clamp(_currentHp - (phys + mag), 0, maxHp);
-
-
         NotifyHealthChanged();
 
         if (_currentHp > 0)
         {
             if (animator) animator.SetTrigger("GetHit");
 
-
-            if (CompareTag("Player")) StartCoroutine(StunRoutine());
+            if (CompareTag("Player"))
+            {
+                // Вызываем событие "Игрока ударили"
+                OnPlayerHit?.Invoke();
+                StartCoroutine(StunRoutine());
+            }
         }
         else
         {

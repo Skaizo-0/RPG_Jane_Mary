@@ -59,22 +59,26 @@ public class Projectile : MonoBehaviour
         _target = bestTarget;
     }
 
-    private void OnTriggerEnter(Collider other)
+private void OnTriggerEnter(Collider other)
+{
+    // 1. Пытаемся получить компонент здоровья
+    if (other.TryGetComponent<IDamageable>(out var target))
     {
-        // Проверяем, чтобы не попасть в самого себя (игрока)
-        if (other.CompareTag("Player")) return;
-
-        if (other.TryGetComponent<IDamageable>(out var target))
-        {
-            target.TakeDamage(0, damage);
-            Destroy(gameObject);
-        }
-        else if (!other.isTrigger)
-        {
-            // Если врезались в стену (не триггер), тоже удаляем
-            Destroy(gameObject);
-        }
+        // 2. Если это Игрок и пуля выпущена врагом (или просто любая пуля)
+        // Мы убираем 'if (other.CompareTag("Player")) return;'
+        
+        // Наносим урон (0 физического, 'damage' магического)
+        target.TakeDamage(0, damage);
+        
+        // Уничтожаем пулю после попадания
+        Destroy(gameObject);
     }
+    // 3. Если врезались не в триггер (например, в стену)
+    else if (!other.isTrigger)
+    {
+        Destroy(gameObject);
+    }
+}
 
     // Отрисовка радиуса поиска в редакторе для удобства
     private void OnDrawGizmosSelected()
