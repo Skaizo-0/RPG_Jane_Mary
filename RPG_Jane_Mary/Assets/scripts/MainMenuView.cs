@@ -15,4 +15,5 @@ public class MainMenuView : MonoBehaviour
 
     [Header("Настройки")]
     public Slider volumeSlider;
+    public AudioClip menuMusic;
 }

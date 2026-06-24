@@ -73933,6 +73933,8 @@ MonoBehaviour:
   victoryView: {fileID: 615883162}
   bossPrefab: {fileID: 7090497335443332626, guid: a90ebba0209cf174496d5e656b5fcf87, type: 3}
   bossSpawnPoint: {fileID: 1001724635}
+  bossSpawnSfx: {fileID: 8300000, guid: ef37402696b09f84684802026d2f4e96, type: 3}
+  bossBattleMusic: {fileID: 8300000, guid: bcae6838e09e8294db31cc1fccb32e20, type: 3}
   victoryMusic: {fileID: 8300000, guid: cbce71d02f58dcc4fbcb3ec3a668c270, type: 3}
 --- !u!4 &1074218564
 Transform:

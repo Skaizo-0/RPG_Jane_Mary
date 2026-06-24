@@ -10,16 +10,22 @@ public class MainMenuController
         _view = view;
         _audioService = audioService;
 
+        // --- НОВАЯ ЛОГИКА: Запуск музыки при создании контроллера ---
+        if (_audioService != null && _view.menuMusic != null)
+        {
+            _audioService.PlayMusic(_view.menuMusic);
+        }
 
+        // Подписки на кнопки
         _view.playButton.onClick.AddListener(PlayGame);
         _view.settingsButton.onClick.AddListener(OpenSettings);
         _view.backButton.onClick.AddListener(CloseSettings);
 
-
+        // Подписка на слайдер
         _view.volumeSlider.onValueChanged.AddListener(SetVolume);
     }
 
-    private void PlayGame() => SceneManager.LoadScene(2); 
+    private void PlayGame() => SceneManager.LoadScene(2);
 
     private void OpenSettings()
     {
@@ -34,6 +40,4 @@ public class MainMenuController
     }
 
     private void SetVolume(float vol) => _audioService.SetVolume(vol);
-
-
 }
