@@ -2254,7 +2254,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f0ae06944a7eff4abdc5f3cb7c3cce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyType: 0
+  enemyType: 1
   player: {fileID: 3392487727962876226, guid: a6cde7d9a0d8a3e4eb820251ad059bd8, type: 3}
   animator: {fileID: 3550965107167859527}
   controller: {fileID: 0}
@@ -2264,8 +2264,8 @@ MonoBehaviour:
   isPeaceful: 1
   magicPrefab: {fileID: 1923774466051800111, guid: 558aa8c7e9daf9144bc897cee71babd6, type: 3}
   firePoint: {fileID: 3059875229605099508}
-  currentElement: 1
-  isMeleeWeapon: 1
+  currentElement: 0
+  isMeleeWeapon: 0
   rangedStaff: {fileID: 8920980513038992507}
   meleeStaff: {fileID: 2345522200420746512}
   audioSource: {fileID: 2516689551033996802}

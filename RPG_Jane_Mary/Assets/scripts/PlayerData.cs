@@ -17,7 +17,8 @@ public class PlayerData
     public float Hp;
     public float MaxHp;
     public Vector3 Position;
+    public int Kills;
 
-    
+
     public List<EnemySaveData> Enemies = new List<EnemySaveData>();
 }

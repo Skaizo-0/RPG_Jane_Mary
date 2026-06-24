@@ -16,7 +16,7 @@ public class BossAI : EnemyAI
     public GameObject[] elementProjectiles;
 
     [Header("Баланс Босса")]
-    public float damageMultiplier = 1f;
+    public float damageMultiplier = 3f;
 
     public StrongAttackState StrongAttackState { get; private set; }
     public DefensiveState DefensiveState { get; private set; }

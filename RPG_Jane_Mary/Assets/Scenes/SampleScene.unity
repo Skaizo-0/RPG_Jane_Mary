@@ -129164,6 +129164,8 @@ MonoBehaviour:
   meleePeacefulPrefab: {fileID: 2776937200247009264, guid: 95c19f69543e30546a702b204bf26b1a, type: 3}
   rangedAggroPrefab: {fileID: 1740090332323805800, guid: 2ee8c9923d71dbd4fa4d35f9ef72ade3, type: 3}
   rangedPeacefulPrefab: {fileID: 3809389820673729255, guid: 49824acba1777144b9f619814af82d29, type: 3}
+  bossPrefab: {fileID: 7090497335443332626, guid: a90ebba0209cf174496d5e656b5fcf87, type: 3}
+  scoreController: {fileID: 1074218563}
 --- !u!4 &1903363890
 Transform:
   m_ObjectHideFlags: 0
@@ -147951,7 +147953,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7125662421695908944, guid: a6cde7d9a0d8a3e4eb820251ad059bd8, type: 3}
       propertyPath: maxHp
-      value: 1000
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 8298803573976595864, guid: a6cde7d9a0d8a3e4eb820251ad059bd8, type: 3}
       propertyPath: magicPrefab

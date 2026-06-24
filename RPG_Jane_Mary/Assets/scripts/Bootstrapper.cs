@@ -20,6 +20,9 @@ public class Bootstrapper : MonoBehaviour
     public GameObject meleePeacefulPrefab; // Мирный мечник
     public GameObject rangedAggroPrefab;   // Агрессивный маг
     public GameObject rangedPeacefulPrefab;// Мирный маг
+    public GameObject bossPrefab;
+
+    public ScoreController scoreController;
 
     private GameInteractor _interactor;
     private HUD_Controller _hudController;
@@ -100,7 +103,8 @@ public class Bootstrapper : MonoBehaviour
         {
             Hp = playerHealth.CurrentHealth,
             MaxHp = playerHealth.MaxHealth,
-            Position = playerMove.transform.position
+            Position = playerMove.transform.position,
+            Kills = scoreController.KillCount
         };
 
       
@@ -110,12 +114,14 @@ public class Bootstrapper : MonoBehaviour
             Health h = enemy.GetComponent<Health>();
             if (h.CurrentHealth > 0) 
             {
+                string type = enemy.CompareTag("Boss") ? "Boss" : enemy.enemyType.ToString();
                 data.Enemies.Add(new EnemySaveData
                 {
                     Type = enemy.enemyType.ToString(),
                     Position = enemy.transform.position,
                     CurrentHp = h.CurrentHealth,
-                    IsPeaceful = enemy.isPeaceful
+                    IsPeaceful = enemy.isPeaceful,
+                   
                 });
             }
         }
@@ -129,6 +135,7 @@ public class Bootstrapper : MonoBehaviour
         _interactor.LoadGame();
         PlayerData data = _interactor.Data;
         if (data == null) return;
+        scoreController.SetScore(data.Kills);
 
         playerHealth.SetHealth(data.Hp);
         playerMove.Teleport(data.Position);
@@ -141,9 +148,11 @@ public class Bootstrapper : MonoBehaviour
         foreach (var enemyData in data.Enemies)
         {
             GameObject prefabToSpawn = null;
-
-            // Логика выбора из 4 префабов
-            if (enemyData.Type == "Melee")
+            if (enemyData.Type == "Boss")
+            {
+                prefabToSpawn = bossPrefab;
+            }
+            else if (enemyData.Type == "Melee")
             {
                 prefabToSpawn = enemyData.IsPeaceful ? meleePeacefulPrefab : meleeAggroPrefab;
             }
@@ -155,15 +164,13 @@ public class Bootstrapper : MonoBehaviour
             if (prefabToSpawn != null)
             {
                 GameObject newEnemy = Instantiate(prefabToSpawn, enemyData.Position, Quaternion.identity);
+                newEnemy.GetComponent<Health>().SetHealth(enemyData.CurrentHp);
 
                 EnemyAI ai = newEnemy.GetComponent<EnemyAI>();
-                Health hp = newEnemy.GetComponent<Health>();
-
-                if (hp != null) hp.SetHealth(enemyData.CurrentHp);
                 if (ai != null)
                 {
                     ai.player = playerMove.transform;
-                    ai.isPeaceful = enemyData.IsPeaceful; // На всякий случай дублируем настройку в скрипт
+                    ai.isPeaceful = enemyData.IsPeaceful;
                 }
             }
         }

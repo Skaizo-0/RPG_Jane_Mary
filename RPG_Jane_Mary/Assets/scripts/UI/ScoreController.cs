@@ -16,6 +16,7 @@ public class ScoreController : MonoBehaviour
     public AudioClip victoryMusic;    // «вук победы
 
     private int _killCount = 0;
+    public int KillCount => _killCount;
 
     private void Start()
     {
@@ -23,6 +24,15 @@ public class ScoreController : MonoBehaviour
     }
 
     private void OnDestroy() => Health.OnEnemyDeath -= HandleKill;
+
+    public void SetScore(int value)
+    {
+        _killCount = value;
+        hudView.scoreText.text = $"”бито: {_killCount}";
+
+        // ≈сли при загрузке очков меньше 2, а музыка босса играет - 
+        // тут можно было бы вернуть обычную музыку, но это по желанию
+    }
 
     private void HandleKill(GameObject victim)
     {
