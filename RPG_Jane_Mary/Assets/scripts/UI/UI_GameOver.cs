@@ -1,37 +1,31 @@
 using UnityEngine;
-using UnityEngine.SceneManagement; 
 
 public class UI_GameOver : MonoBehaviour
 {
-    [Header("Настройки")]
-    public GameObject gameOverPanel; 
+    public GameObject gameOverPanel;
+    public AudioClip lossSound;
 
-    private void OnEnable()
-    {
-        Health.OnPlayerDeath += ShowGameOverScreen;
-    }
+    private void OnEnable() => Health.OnPlayerDeath += HandleDeath;
+    private void OnDisable() => Health.OnPlayerDeath -= HandleDeath;
 
-    private void OnDisable()
+    private void HandleDeath()
     {
-        Health.OnPlayerDeath -= ShowGameOverScreen;
-    }
+        // 1. Получаем сервис и играем звук
+        ServiceLocator.Get<IAudioService>().PlaySfx(lossSound);
 
-    private void ShowGameOverScreen()
-    {
+        // 2. Показываем панель
         gameOverPanel.SetActive(true);
 
+        // 3. Останавливаем мир
         Time.timeScale = 0f;
-
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
 
-
     public void RestartGame()
     {
- 
         Time.timeScale = 1f;
-
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
 }

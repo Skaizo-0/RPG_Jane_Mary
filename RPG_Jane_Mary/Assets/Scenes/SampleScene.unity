@@ -41103,6 +41103,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameOverPanel: {fileID: 497203425}
+  lossSound: {fileID: 8300000, guid: 22b15a00840e4f140816d1ce0cf7b28b, type: 3}
 --- !u!114 &615883162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -73929,7 +73930,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hudView: {fileID: 615883160}
-  victoryUI: {fileID: 615883162}
+  victoryView: {fileID: 615883162}
   bossPrefab: {fileID: 7090497335443332626, guid: a90ebba0209cf174496d5e656b5fcf87, type: 3}
   bossSpawnPoint: {fileID: 1001724635}
   victoryMusic: {fileID: 8300000, guid: cbce71d02f58dcc4fbcb3ec3a668c270, type: 3}
@@ -147903,7 +147904,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7125662421695908944, guid: a6cde7d9a0d8a3e4eb820251ad059bd8, type: 3}
       propertyPath: maxHp
-      value: 1000
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8298803573976595864, guid: a6cde7d9a0d8a3e4eb820251ad059bd8, type: 3}
       propertyPath: magicPrefab

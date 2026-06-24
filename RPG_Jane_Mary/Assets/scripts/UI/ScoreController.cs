@@ -2,85 +2,48 @@ using UnityEngine;
 
 public class ScoreController : MonoBehaviour
 {
-    [Header("Ссылки на UI")]
     public UI_HUD hudView;
-    public UI_Victory victoryUI; // <-- НОВАЯ ССЫЛКА
-
-    [Header("Параметры босса")]
+    public UI_Victory victoryView; // Ссылка на экран победы
     public GameObject bossPrefab;
     public Transform bossSpawnPoint;
     public AudioClip victoryMusic;
 
     private int _killCount = 0;
-    private IAudioService _audioService;
 
     private void Start()
     {
-        _audioService = ServiceLocator.Get<IAudioService>();
         Health.OnEnemyDeath += HandleKill;
-        UpdateScoreUI();
     }
 
-    private void OnDestroy()
-    {
-        Health.OnEnemyDeath -= HandleKill;
-    }
+    private void OnDestroy() => Health.OnEnemyDeath -= HandleKill;
 
     private void HandleKill(GameObject victim)
     {
-        // ЕСЛИ УМЕР БОСС — ЭТО ПОБЕДА!
+        // Факт: Убит босс -> Победа
         if (victim.CompareTag("Boss"))
         {
-            PlayVictory();
+            ExecuteVictory();
             return;
         }
 
         _killCount++;
-        UpdateScoreUI();
+        hudView.scoreText.text = $"Убито: {_killCount}";
 
-        // Спавним босса на 2-м убийстве
-        if (_killCount == 2)
-        {
-            SpawnBoss();
-        }
-
-        // (Опционально) Если вы хотите победу просто по количеству убийств:
-        // if (_killCount == 10) PlayVictory(); 
+        if (_killCount == 2) SpawnBoss();
     }
 
-    private void UpdateScoreUI()
+    private void ExecuteVictory()
     {
-        if (hudView.scoreText != null)
-            hudView.scoreText.text = $"Убито: {_killCount}";
+        // Звук через сервис
+        ServiceLocator.Get<IAudioService>().PlaySfx(victoryMusic);
+
+        // Показ UI
+        if (victoryView != null) victoryView.Show();
     }
 
     private void SpawnBoss()
     {
-        if (bossPrefab == null || bossSpawnPoint == null) return;
-
-        GameObject spawnedBoss = Instantiate(bossPrefab, bossSpawnPoint.position, bossSpawnPoint.rotation);
-        BossAI bossScript = spawnedBoss.GetComponent<BossAI>();
-
-        if (bossScript != null)
-        {
-            bossScript.player = GameObject.FindGameObjectWithTag("Player").transform;
-        }
-    }
-
-    private void PlayVictory()
-    {
-        Debug.Log("Победа!");
-
-        // 1. Показываем экран победы
-        if (victoryUI != null)
-        {
-            victoryUI.ShowVictoryScreen();
-        }
-
-        // 2. Играем музыку
-        if (victoryMusic != null && _audioService != null)
-        {
-            _audioService.PlayMusic(victoryMusic);
-        }
+        GameObject boss = Instantiate(bossPrefab, bossSpawnPoint.position, bossSpawnPoint.rotation);
+        boss.GetComponent<BossAI>().player = GameObject.FindGameObjectWithTag("Player").transform;
     }
 }
