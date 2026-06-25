@@ -62,7 +62,7 @@ public class BossAI : EnemyAI
 
         base.Update();
     }
-
+    // настройка оружия и дистанций
     void SetupBoss()
     {
         if (rangedStaff != null) rangedStaff.SetActive(!isMeleeWeapon);
@@ -73,6 +73,7 @@ public class BossAI : EnemyAI
 
     public override void TryAttackLogic()
     {
+        // если босс в ярости он атакует в 2 раза чаще
         float actualCD = _isEnraged ? _attackCooldown / 2f : _attackCooldown;
         if (Time.time < _lastAttackTime + actualCD) return;
 
@@ -96,11 +97,13 @@ public class BossAI : EnemyAI
 
     public override void BossPerformAction()
     {
+        // если игрок успел убежать слишком далеко во время замаха то промах
         if (Vector3.Distance(transform.position, player.position) > attackDist + 3f) return;
 
         int index = (int)currentElement;
         if (isMeleeWeapon)
         {
+            // звук удара стихией
             if (elementSounds.Length > index && elementSounds[index] != null)
                 audioSource.PlayOneShot(elementSounds[index]);
 

@@ -79,7 +79,7 @@ public class PlayerCombat : MonoBehaviour
 
     public void DealPhysDamage()
     {
-       
+        // создание сферы перед игроком для поиска врагов
         Vector3 pos = transform.position + transform.forward * 1.5f + Vector3.up;
         Collider[] enemies = Physics.OverlapSphere(pos, physRange, enemyLayer);
 

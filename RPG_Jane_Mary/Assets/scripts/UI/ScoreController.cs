@@ -20,11 +20,12 @@ public class ScoreController : MonoBehaviour
 
     private void Start()
     {
+        //подписка на событие
         Health.OnEnemyDeath += HandleKill;
     }
-
+    //отписка от события
     private void OnDestroy() => Health.OnEnemyDeath -= HandleKill;
-
+    // метод для загрузки сохранения 
     public void SetScore(int value)
     {
         _killCount = value;
@@ -61,6 +62,7 @@ public class ScoreController : MonoBehaviour
         BossAI bossScript = spawnedBoss.GetComponent<BossAI>();
         if (bossScript != null)
         {
+            // передаем боссу ссылку на игрока
             bossScript.player = GameObject.FindGameObjectWithTag("Player").transform;
         }
 

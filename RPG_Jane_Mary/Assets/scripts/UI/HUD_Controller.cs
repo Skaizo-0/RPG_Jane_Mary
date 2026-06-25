@@ -18,7 +18,7 @@ public class HUD_Controller
         float hpNormalized = _health.CurrentHealth / _health.MaxHealth;
         _view.hudHpSlider.value = hpNormalized;
         _view.hpText.text = $"{(int)_health.CurrentHealth} / {(int)_health.MaxHealth}";
-
+        //перезарядка магии 
         if (_view.magicIconOverlay != null)
         {
             _view.magicIconOverlay.fillAmount = 1 - _combat.MagicReadyProgress;

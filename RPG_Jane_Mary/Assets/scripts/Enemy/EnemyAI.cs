@@ -53,7 +53,7 @@ public class EnemyAI : MonoBehaviour
         }
 
         if (enemyType == EnemyType.Ranged) attackDist = 8f;
-
+        // подписка на событие
         Health.OnHealthChanged += (cur, max) =>
         {
             if (gameObject.CompareTag("Boss"))
@@ -139,8 +139,10 @@ public class EnemyAI : MonoBehaviour
         if (Time.time > _lastAttackTime + _attackCooldown)
         {
             _lastAttackTime = Time.time;
+            // выбираем триггер анимации в зависимости от типа врага
             string trigger = (enemyType == EnemyType.Melee) ? "AttackPh" : "AttackMa";
             animator.SetTrigger(trigger);
+            // наносим урон с задержкой (Invoke)
             if (enemyType == EnemyType.Melee) Invoke("ApplyMeleeDamage", 0.6f);
             else Invoke("LaunchMagic", 0.6f);
         }

@@ -34,8 +34,9 @@ public class EnemySpawner : MonoBehaviour
     {
         if (enemyPrefabs.Length == 0) return;
 
-
+        // генерируем случайную точку внутри круга радиусом 1
         Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
+        // превращаем точку в 3D координаты
         Vector3 spawnPos = transform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
 
 
@@ -44,7 +45,7 @@ public class EnemySpawner : MonoBehaviour
 
 
         EnemyAI ai = newEnemy.GetComponent<EnemyAI>();
-        if (ai != null) ai.player = _playerTransform;
+        if (ai != null) ai.player = _playerTransform; // говорим врагу где игрок
 
 
         if (Random.Range(0f, 100f) <= rareMobChance)

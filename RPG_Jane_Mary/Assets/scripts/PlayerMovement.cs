@@ -19,6 +19,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        // если двигаемся
         if (_input == null) return;
 
         Vector3 inputDir = _input.MoveAxis;
@@ -31,13 +32,13 @@ public class PlayerMovement : MonoBehaviour
             camForward.y = 0; camRight.y = 0;
 
             Vector3 moveDir = (camForward.normalized * inputDir.z + camRight.normalized * inputDir.x).normalized;
-
+            //бег или шаг
             float currentSpeed = _input.IsRunning ? runSpeed : walkSpeed;
             controller.Move(moveDir * currentSpeed * Time.deltaTime);
 
-         
+            // поворот персонажа в направлении движения
             transform.forward = Vector3.Slerp(transform.forward, moveDir, 10f * Time.deltaTime);
-
+           
             animator.SetFloat("Speed", _input.IsRunning ? 1f : 0.5f, 0.1f, Time.deltaTime);
         }
         else
