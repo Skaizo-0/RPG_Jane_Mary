@@ -23,7 +23,7 @@ public class Health : MonoBehaviour, IDamageable
 
     public static event Action OnPlayerDeath;
 
-    private void Awake() // Заменяем Start на Awake
+    private void Awake() 
     {
         _currentHp = maxHp;
     }
@@ -46,7 +46,6 @@ public class Health : MonoBehaviour, IDamageable
 
             if (CompareTag("Player"))
             {
-                // Вызываем событие "Игрока ударили"
                 OnPlayerHit?.Invoke();
                 StartCoroutine(StunRoutine());
             }

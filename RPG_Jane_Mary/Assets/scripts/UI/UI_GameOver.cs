@@ -10,13 +10,10 @@ public class UI_GameOver : MonoBehaviour
 
     private void HandleDeath()
     {
-        // 1. Получаем сервис и играем звук
         ServiceLocator.Get<IAudioService>().PlaySfx(lossSound);
 
-        // 2. Показываем панель
         gameOverPanel.SetActive(true);
 
-        // 3. Останавливаем мир
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;

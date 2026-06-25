@@ -29,7 +29,7 @@ public class EnemyAI : MonoBehaviour
     protected float _attackCooldown = 2f;
     protected float _lastAttackTime;
 
-    // --- НОВОЕ: Переменная для гравитации ---
+
     private float _verticalVelocity;
 
     protected virtual void Awake()
@@ -69,47 +69,45 @@ public class EnemyAI : MonoBehaviour
     {
         if (player == null || Health.CurrentHealth <= 0)
         {
-            ApplyGravity(); // Даже мертвый или стоячий должен падать, если он в воздухе
+            ApplyGravity(); 
             StopMoving();
             return;
         }
 
-        ApplyGravity(); // Вызываем гравитацию каждый кадр
+        ApplyGravity();
         StateMachine.CurrentState.Update();
     }
 
-    // --- НОВОЕ: Метод для гравитации ---
+
     private void ApplyGravity()
     {
         if (controller.isGrounded && _verticalVelocity < 0)
         {
-            _verticalVelocity = -2f; // Прижимаем к земле, чтобы isGrounded работал стабильно
+            _verticalVelocity = -2f;
         }
         else
         {
             _verticalVelocity += Physics.gravity.y * Time.deltaTime;
         }
 
-        // Применяем только вертикальное движение
         controller.Move(new Vector3(0, _verticalVelocity, 0) * Time.deltaTime);
     }
 
     public void MoveToPlayer()
     {
         Vector3 dir = (player.position - transform.position).normalized;
-        MoveInDirection(dir); // Используем общий метод для единообразия
+        MoveInDirection(dir); 
     }
 
     public void MoveInDirection(Vector3 dir)
     {
-        dir.y = 0; // Направление только по горизонтали
+        dir.y = 0; //только по горизонтали
 
         if (dir.magnitude > 0.1f)
         {
-            // Двигаемся
             controller.Move(dir * speed * Time.deltaTime);
 
-            // Поворачиваемся лицо в сторону бега (важно для бегства!)
+            //поворачиваемся лицом в сторону бега
             Quaternion targetRotation = Quaternion.LookRotation(dir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.deltaTime);
 
@@ -134,7 +132,6 @@ public class EnemyAI : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookDir), 5f * Time.deltaTime);
     }
 
-    // ... остальной код (атаки, магия) без изменений ...
     public virtual void BossPerformAction() { if (enemyType == EnemyType.Ranged) LaunchMagic(); else ApplyMeleeDamage(); }
 
     public virtual void TryAttackLogic()

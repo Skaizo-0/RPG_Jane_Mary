@@ -15,6 +15,6 @@ public class UI_Victory : MonoBehaviour
     public void RestartGame()
     {
         Time.timeScale = 1f;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(0); // В главное меню
+        UnityEngine.SceneManagement.SceneManager.LoadScene(0); 
     }
 }

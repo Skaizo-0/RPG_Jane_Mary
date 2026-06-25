@@ -1,19 +1,18 @@
-using UnityEngine.SceneManagement;
-using UnityEngine;
+    using UnityEngine.SceneManagement;
+    using UnityEngine;
 
-public class AppBootstrapper : MonoBehaviour
-{
-    private void Awake()
+    public class AppBootstrapper : MonoBehaviour
     {
-        // Создаем сервисы один раз на всю игру
-        var audioService = new UnityAudioService();
-        var saveService = new GameRepository(); // Твой репозиторий
+        private void Awake()
+        {
 
-        // Регистрируем их где-то (например, в статическом классе или ServiceLocator)
-        ServiceLocator.Register<IAudioService>(audioService);
-        ServiceLocator.Register<ISaveService>(saveService);
+            var audioService = new UnityAudioService();
+            var saveService = new GameRepository();
 
-        DontDestroyOnLoad(gameObject);
-        SceneManager.LoadScene("MainMenu"); // Переходим в меню
+            ServiceLocator.Register<IAudioService>(audioService);
+            ServiceLocator.Register<ISaveService>(saveService);
+
+            DontDestroyOnLoad(gameObject);
+            SceneManager.LoadScene("MainMenu"); 
+        }
     }
-}

@@ -16,10 +16,10 @@ public class Bootstrapper : MonoBehaviour
     public GameObject gameMenuPanel;
 
     [Header("Префабы врагов")]
-    public GameObject meleeAggroPrefab;    // Агрессивный мечник
-    public GameObject meleePeacefulPrefab; // Мирный мечник
-    public GameObject rangedAggroPrefab;   // Агрессивный маг
-    public GameObject rangedPeacefulPrefab;// Мирный маг
+    public GameObject meleeAggroPrefab;  
+    public GameObject meleePeacefulPrefab;
+    public GameObject rangedAggroPrefab;   
+    public GameObject rangedPeacefulPrefab;
     public GameObject bossPrefab;
 
     public ScoreController scoreController;
@@ -140,11 +140,11 @@ public class Bootstrapper : MonoBehaviour
         playerHealth.SetHealth(data.Hp);
         playerMove.Teleport(data.Position);
 
-        // Очистка старых мобов
+        //убираем старых мобов
         EnemyAI[] currentEnemies = FindObjectsOfType<EnemyAI>();
         foreach (var enemy in currentEnemies) Destroy(enemy.gameObject);
 
-        // Спавн новых мобов
+        //спавн новых мобов
         foreach (var enemyData in data.Enemies)
         {
             GameObject prefabToSpawn = null;

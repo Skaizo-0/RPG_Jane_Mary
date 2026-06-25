@@ -111,7 +111,12 @@ public class BossAI : EnemyAI
             if (elementProjectiles.Length > index && elementProjectiles[index] != null)
             {
                 Vector3 targetDir = (player.position + Vector3.up - firePoint.position).normalized;
-                Instantiate(elementProjectiles[index], firePoint.position, Quaternion.LookRotation(targetDir));
+                GameObject ball = Instantiate(elementProjectiles[index], firePoint.position, Quaternion.LookRotation(targetDir));
+
+                if (ball.TryGetComponent<Projectile>(out var p))
+                {
+                    p.damage *= damageMultiplier;
+                }
             }
         }
     }

@@ -11,9 +11,9 @@ public class ScoreController : MonoBehaviour
     public Transform bossSpawnPoint;
 
     [Header("Аудио клипы")]
-    public AudioClip bossSpawnSfx;    // Звук появления (рык/взрыв)
-    public AudioClip bossBattleMusic; // Фоновая музыка боя с боссом
-    public AudioClip victoryMusic;    // Звук победы
+    public AudioClip bossSpawnSfx;    
+    public AudioClip bossBattleMusic; 
+    public AudioClip victoryMusic;    
 
     private int _killCount = 0;
     public int KillCount => _killCount;
@@ -30,25 +30,26 @@ public class ScoreController : MonoBehaviour
         _killCount = value;
         hudView.scoreText.text = $"Убито: {_killCount}";
 
-        // Если при загрузке очков меньше 2, а музыка босса играет - 
-        // тут можно было бы вернуть обычную музыку, но это по желанию
     }
 
     private void HandleKill(GameObject victim)
     {
-        if (victim.CompareTag("Boss"))
-        {
-            ExecuteVictory();
-            return;
-        }
-
         _killCount++;
         hudView.scoreText.text = $"Убито: {_killCount}";
 
-        // Когда убито 2 моба — призываем босса
-        if (_killCount == 2)
+        if (_killCount == 3)
         {
             SpawnBoss();
+        }
+
+        if (victim.CompareTag("Boss") && _killCount >= 5)
+        {
+            ExecuteVictory();
+        }
+
+        else if (_killCount >= 5)
+        {
+            ExecuteVictory();
         }
     }
 
@@ -56,7 +57,6 @@ public class ScoreController : MonoBehaviour
     {
         if (bossPrefab == null || bossSpawnPoint == null) return;
 
-        // 1. Создаем босса
         GameObject spawnedBoss = Instantiate(bossPrefab, bossSpawnPoint.position, bossSpawnPoint.rotation);
         BossAI bossScript = spawnedBoss.GetComponent<BossAI>();
         if (bossScript != null)
@@ -64,15 +64,12 @@ public class ScoreController : MonoBehaviour
             bossScript.player = GameObject.FindGameObjectWithTag("Player").transform;
         }
 
-        // --- ЛОГИКА ЗВУКА (Лекция 3: Service Locator) ---
         var audioService = ServiceLocator.Get<IAudioService>();
         if (audioService != null)
         {
-            // 2. Играем разовый звук появления (рык)
             if (bossSpawnSfx != null)
                 audioService.PlaySfx(bossSpawnSfx);
 
-            // 3. Меняем фоновую музыку на боевую (зацикленную)
             if (bossBattleMusic != null)
                 audioService.PlayMusic(bossBattleMusic);
         }

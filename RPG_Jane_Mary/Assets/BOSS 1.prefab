@@ -2279,7 +2279,7 @@ MonoBehaviour:
   - {fileID: 1923774466051800111, guid: de6630ba36234314d88933329411997b, type: 3}
   - {fileID: 1923774466051800111, guid: a08d6d4cfb3309e499c7fbee9e02621f, type: 3}
   - {fileID: 1923774466051800111, guid: 558aa8c7e9daf9144bc897cee71babd6, type: 3}
-  damageMultiplier: 1
+  damageMultiplier: 5
 --- !u!1 &7102279935489848682
 GameObject:
   m_ObjectHideFlags: 0

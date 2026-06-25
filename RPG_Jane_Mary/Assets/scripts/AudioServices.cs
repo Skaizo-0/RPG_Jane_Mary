@@ -3,7 +3,7 @@ using UnityEngine;
 public interface IAudioService
 {
     void PlayMusic(AudioClip clip);
-    void PlaySfx(AudioClip clip); // Для разовых звуков (победа/проигрыш)
+    void PlaySfx(AudioClip clip); 
     void SetVolume(float volume);
 }
 
@@ -13,7 +13,7 @@ public class UnityAudioService : IAudioService
 
     public void SetVolume(float volume)
     {
-        // Устанавливаем общую громкость звука в Unity
+      
         AudioListener.volume = volume;
         Debug.Log($"[AudioService] Громкость установлена на: {volume}");
     }
@@ -38,7 +38,7 @@ public class UnityAudioService : IAudioService
     {
         if (_source == null)
         {
-            // Ищем объект на сцене, как в Лекции 3
+           
             GameObject manager = GameObject.Find("GameplayManager");
             if (manager != null) _source = manager.GetComponent<AudioSource>();
         }

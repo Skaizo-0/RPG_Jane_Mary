@@ -3,23 +3,22 @@ using UnityEngine;
 public class PlayerAudioHandler : MonoBehaviour
 {
     [Header("Настройки звука")]
-    public AudioClip hurtSound; // Перетащите сюда звук стона/удара
+    public AudioClip hurtSound; 
 
     private void OnEnable()
     {
-        // Подписываемся на событие получения урона
+        //подписка на событие получения урона
         Health.OnPlayerHit += PlayHurtSound;
     }
 
     private void OnDisable()
     {
-        // Обязательно отписываемся (Лекция 7)
+        //отписка
         Health.OnPlayerHit -= PlayHurtSound;
     }
 
     private void PlayHurtSound()
     {
-        // Получаем сервис звука и играем SFX (Лекция 3)
         var audioService = ServiceLocator.Get<IAudioService>();
         if (audioService != null && hurtSound != null)
         {
